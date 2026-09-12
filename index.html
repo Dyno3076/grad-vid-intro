@@ -8,11 +8,10 @@
 <style>
 html, body {
     margin: 0;
-    padding: 0;
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: black;
+    background: #000;
 }
 
 canvas {
@@ -32,7 +31,8 @@ canvas {
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-let W, H;
+let W;
+let H;
 
 function resize() {
     W = canvas.width = window.innerWidth;
@@ -44,29 +44,98 @@ window.addEventListener("resize", resize);
 
 
 // ============================================================
-// SETTINGS
+// 6 PLACEHOLDER CLIPS
 // ============================================================
 
-const INTRO_DURATION = 10000;
-const START_ZOOM = 8.5;
-
-
-// ============================================================
-// ORIGINAL 4/3 CAMERA PATH
-// ============================================================
-
-const path = [
-    { x: 0.16, y: 0.18 },
-    { x: 0.38, y: 0.18 },
-    { x: 0.30, y: 0.43 },
-    { x: 0.55, y: 0.48 },
-    { x: 0.70, y: 0.62 },
-    { x: 0.82, y: 0.78 }
+const clips = [
+    "#457b9d",
+    "#606c38",
+    "#7b2cbf",
+    "#dc2f02",
+    "#00b4d8",
+    "#ff6d00"
 ];
 
 
 // ============================================================
-// ORIGINAL 4/3 MASK
+// DRAW A PLACEHOLDER CLIP
+// ============================================================
+
+function drawClip(x, y, size, colour, number) {
+
+    // Clip background
+    ctx.fillStyle = colour;
+
+    ctx.fillRect(
+        x,
+        y,
+        size,
+        size
+    );
+
+
+    // Person
+    ctx.fillStyle = "#f1c27d";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x + size * 0.5,
+        y + size * 0.35,
+        size * 0.12,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    // Body
+    ctx.fillStyle = "#111";
+
+    ctx.fillRect(
+        x + size * 0.34,
+        y + size * 0.48,
+        size * 0.32,
+        size * 0.38
+    );
+
+
+    // Waving arm
+    ctx.strokeStyle = "#f1c27d";
+    ctx.lineWidth = size * 0.07;
+    ctx.lineCap = "round";
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        x + size * 0.63,
+        y + size * 0.52
+    );
+
+    ctx.lineTo(
+        x + size * 0.82,
+        y + size * 0.30
+    );
+
+    ctx.stroke();
+
+
+    // Number
+    ctx.fillStyle = "white";
+    ctx.font = `bold ${size * 0.12}px Arial`;
+    ctx.textAlign = "center";
+
+    ctx.fillText(
+        number,
+        x + size * 0.5,
+        y + size * 0.93
+    );
+}
+
+
+// ============================================================
+// 4/3 MASK
 // ============================================================
 
 function createMask() {
@@ -85,17 +154,28 @@ function createMask() {
     m.lineCap = "square";
     m.lineJoin = "miter";
 
+
+    // -------------------------
     // 4
+    // -------------------------
+
     m.beginPath();
+
     m.moveTo(350, 120);
     m.lineTo(350, 530);
     m.lineTo(110, 530);
     m.lineTo(520, 120);
     m.lineTo(520, 880);
+
     m.stroke();
 
+
+    // -------------------------
     // 3
+    // -------------------------
+
     m.beginPath();
+
     m.moveTo(650, 170);
 
     m.bezierCurveTo(
@@ -112,6 +192,7 @@ function createMask() {
 
     m.stroke();
 
+
     return mask;
 }
 
@@ -119,361 +200,205 @@ const mask = createMask();
 
 
 // ============================================================
-// PLACEHOLDER CLIPS
+// DRAW THE 6 CLIPS
 // ============================================================
 
-function drawClip(c, x, y, size, type, time) {
+function drawClips() {
 
-    c.save();
+    const size = 150;
 
-    c.translate(x, y);
-
-    const wave =
-        Math.sin(time * 0.0025 + type * 1.7)
-        * size * 0.08;
-
-    c.translate(wave, 0);
-
-
-    const gradients = [
-        ["#1d3557", "#457b9d"],
-        ["#283618", "#606c38"],
-        ["#3c096c", "#7b2cbf"],
-        ["#9d0208", "#dc2f02"],
-        ["#023e8a", "#00b4d8"],
-        ["#5a189a", "#ff6d00"]
+    const positions = [
+        [170, 150],
+        [350, 150],
+        [530, 150],
+        [260, 400],
+        [440, 400],
+        [620, 400]
     ];
 
-    const g = c.createLinearGradient(
-        -size / 2,
-        -size / 2,
-        size / 2,
-        size / 2
-    );
 
-    g.addColorStop(0, gradients[type][0]);
-    g.addColorStop(1, gradients[type][1]);
+    positions.forEach((pos, i) => {
 
-    c.fillStyle = g;
-
-    c.fillRect(
-        -size / 2,
-        -size / 2,
-        size,
-        size
-    );
-
-
-    // Head
-    c.fillStyle = "#f1c27d";
-
-    c.beginPath();
-
-    c.arc(
-        0,
-        -size * 0.08,
-        size * 0.13,
-        0,
-        Math.PI * 2
-    );
-
-    c.fill();
-
-
-    // Body
-    c.fillStyle = "#111";
-
-    c.beginPath();
-
-    c.roundRect(
-        -size * 0.18,
-        size * 0.05,
-        size * 0.36,
-        size * 0.35,
-        size * 0.06
-    );
-
-    c.fill();
-
-
-    // Waving arm
-    c.strokeStyle = "#f1c27d";
-    c.lineWidth = size * 0.07;
-    c.lineCap = "round";
-
-    const armWave =
-        Math.sin(time * 0.006 + type)
-        * size * 0.12;
-
-    c.beginPath();
-
-    c.moveTo(
-        size * 0.13,
-        size * 0.12
-    );
-
-    c.lineTo(
-        size * 0.30,
-        -size * 0.05 + armWave
-    );
-
-    c.stroke();
-
-
-    // Hand
-    c.beginPath();
-
-    c.arc(
-        size * 0.30,
-        -size * 0.05 + armWave,
-        size * 0.075,
-        0,
-        Math.PI * 2
-    );
-
-    c.fill();
-
-    c.restore();
-}
-
-
-// ============================================================
-// DRAW CLIPS
-// ============================================================
-
-function drawClips(c, time) {
-
-    const tileSize = 105;
-    const spacing = 92;
-
-    // Starts slow, then accelerates
-    const speed =
-        0.35 +
-        (time / INTRO_DURATION) * 2.5;
-
-    const movement =
-        time * 0.055 * speed;
-
-
-    for (let y = -200; y <= 1200; y += spacing) {
-
-        for (let x = -200; x <= 1200; x += spacing) {
-
-            // Keep the entire clip field covering the mask
-            const offsetX =
-                ((x + movement) % 1000 + 1000) % 1000;
-
-            const offsetY =
-                ((y + movement * 0.55) % 1000 + 1000) % 1000;
-
-
-            const gridX =
-                Math.floor(x / spacing);
-
-            const gridY =
-                Math.floor(y / spacing);
-
-
-            const index =
-                Math.abs(
-                    gridX * 7 +
-                    gridY * 13 +
-                    Math.floor(time / 300)
-                ) % 6;
-
-
-            drawClip(
-                c,
-                offsetX,
-                offsetY,
-                tileSize,
-                index,
-                time
-            );
-        }
-    }
-}
-
-
-// ============================================================
-// EASING
-// ============================================================
-
-function easeInOut(t) {
-
-    return t < 0.5
-        ? 2 * t * t
-        : 1 - Math.pow(-2 * t + 2, 2) / 2;
-}
-
-
-// ============================================================
-// CAMERA
-// ============================================================
-
-function getCamera(progress) {
-
-    const eased = easeInOut(progress);
-
-    const zoom =
-        START_ZOOM +
-        (1 - START_ZOOM) * eased;
-
-
-    const position =
-        eased * (path.length - 1);
-
-    const index =
-        Math.min(
-            Math.floor(position),
-            path.length - 2
+        drawClip(
+            pos[0],
+            pos[1],
+            size,
+            clips[i],
+            i + 1
         );
 
-    const local =
-        position - index;
-
-
-    const a = path[index];
-    const b = path[index + 1];
-
-
-    return {
-        x: a.x + (b.x - a.x) * local,
-        y: a.y + (b.y - a.y) * local,
-        zoom: zoom
-    };
+    });
 }
 
 
 // ============================================================
-// DRAW FRAME
+// CREATE CLIP LAYER
 // ============================================================
 
-function drawFrame(elapsed) {
+const clipCanvas = document.createElement("canvas");
 
-    ctx.clearRect(0, 0, W, H);
+clipCanvas.width = 1000;
+clipCanvas.height = 1000;
 
-    ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, W, H);
-
-
-    // Temporary layer for clips
-    const temp = document.createElement("canvas");
-
-    temp.width = 1000;
-    temp.height = 1000;
-
-    const tc = temp.getContext("2d");
+const clipCtx = clipCanvas.getContext("2d");
 
 
-    // Draw clips
-    drawClips(tc, elapsed);
+// Temporarily use the clip canvas
+function renderClips() {
+
+    clipCtx.clearRect(
+        0,
+        0,
+        1000,
+        1000
+    );
+
+    const originalContext = window.ctx;
+
+    // Draw using the clip canvas context
+    function drawClipToLayer(x, y, size, colour, number) {
+
+        clipCtx.fillStyle = colour;
+
+        clipCtx.fillRect(
+            x,
+            y,
+            size,
+            size
+        );
+
+        clipCtx.fillStyle = "#f1c27d";
+
+        clipCtx.beginPath();
+
+        clipCtx.arc(
+            x + size * 0.5,
+            y + size * 0.35,
+            size * 0.12,
+            0,
+            Math.PI * 2
+        );
+
+        clipCtx.fill();
+
+        clipCtx.fillStyle = "#111";
+
+        clipCtx.fillRect(
+            x + size * 0.34,
+            y + size * 0.48,
+            size * 0.32,
+            size * 0.38
+        );
+
+        clipCtx.strokeStyle = "#f1c27d";
+        clipCtx.lineWidth = size * 0.07;
+        clipCtx.lineCap = "round";
+
+        clipCtx.beginPath();
+
+        clipCtx.moveTo(
+            x + size * 0.63,
+            y + size * 0.52
+        );
+
+        clipCtx.lineTo(
+            x + size * 0.82,
+            y + size * 0.30
+        );
+
+        clipCtx.stroke();
+
+        clipCtx.fillStyle = "white";
+        clipCtx.font = `bold ${size * 0.12}px Arial`;
+        clipCtx.textAlign = "center";
+
+        clipCtx.fillText(
+            number,
+            x + size * 0.5,
+            y + size * 0.93
+        );
+    }
 
 
-    // Cut clips into the 4/3 shape
-    tc.globalCompositeOperation = "destination-in";
+    const size = 150;
 
-    tc.drawImage(
+    const positions = [
+        [170, 150],
+        [350, 150],
+        [530, 150],
+        [260, 400],
+        [440, 400],
+        [620, 400]
+    ];
+
+
+    positions.forEach((pos, i) => {
+
+        drawClipToLayer(
+            pos[0],
+            pos[1],
+            size,
+            clips[i],
+            i + 1
+        );
+
+    });
+
+
+    // Cut everything outside the 4/3
+    clipCtx.globalCompositeOperation = "destination-in";
+
+    clipCtx.drawImage(
         mask,
         0,
         0
     );
 
-    tc.globalCompositeOperation = "source-over";
-
-
-    // Camera progress
-    const progress =
-        Math.min(
-            elapsed / INTRO_DURATION,
-            1
-        );
-
-
-    const camera =
-        getCamera(progress);
-
-
-    const logoSize =
-        Math.max(W, H) * 1.35;
-
-
-    ctx.save();
-
-
-    // Screen centre
-    ctx.translate(
-        W / 2,
-        H / 2
-    );
-
-
-    // Zoom
-    ctx.scale(
-        camera.zoom,
-        camera.zoom
-    );
-
-
-    // Move camera through the 4/3
-    ctx.translate(
-        -camera.x * logoSize,
-        -camera.y * logoSize
-    );
-
-
-    // Draw the clip-filled 4/3
-    ctx.drawImage(
-        temp,
-        0,
-        0,
-        logoSize,
-        logoSize
-    );
-
-
-    ctx.restore();
+    clipCtx.globalCompositeOperation = "source-over";
 }
 
 
 // ============================================================
-// CLICK TO START
+// DRAW FINAL RESULT
 // ============================================================
 
-let started = false;
+function draw() {
 
-document.addEventListener("click", function() {
+    ctx.clearRect(
+        0,
+        0,
+        W,
+        H
+    );
 
-    if (started) return;
+    ctx.fillStyle = "#000";
 
-    started = true;
-
-    const startTime = performance.now();
-
-
-    function animate(now) {
-
-        const elapsed =
-            now - startTime;
-
-
-        drawFrame(elapsed);
-
-
-        if (elapsed < INTRO_DURATION) {
-
-            requestAnimationFrame(animate);
-
-        } else {
-
-            // Stay on the final clip-filled 4/3
-            drawFrame(INTRO_DURATION);
-        }
-    }
+    ctx.fillRect(
+        0,
+        0,
+        W,
+        H
+    );
 
 
-    requestAnimationFrame(animate);
-});
+    renderClips();
+
+
+    const size =
+        Math.max(W, H) * 1.1;
+
+
+    ctx.drawImage(
+        clipCanvas,
+        (W - size) / 2,
+        (H - size) / 2,
+        size,
+        size
+    );
+}
+
+
+draw();
 
 </script>
 
