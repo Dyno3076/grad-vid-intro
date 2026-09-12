@@ -6,21 +6,20 @@
 <title>Graduation Intro</title>
 
 <style>
-    html, body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        background: #000;
-    }
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: black;
+}
 
-    canvas {
-        display: block;
-        width: 100vw;
-        height: 100vh;
-        background: #000;
-    }
+canvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+}
 </style>
 </head>
 
@@ -29,6 +28,7 @@
 <canvas id="canvas"></canvas>
 
 <script>
+
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
@@ -39,8 +39,8 @@ function resize() {
     H = canvas.height = window.innerHeight;
 }
 
-window.addEventListener("resize", resize);
 resize();
+window.addEventListener("resize", resize);
 
 
 // ============================================================
@@ -48,19 +48,7 @@ resize();
 // ============================================================
 
 const INTRO_DURATION = 10000;
-
-// Start VERY zoomed in
 const START_ZOOM = 8.5;
-
-// Placeholder clips
-const clips = [
-    { type: 0 },
-    { type: 1 },
-    { type: 2 },
-    { type: 3 },
-    { type: 4 },
-    { type: 5 }
-];
 
 
 // ============================================================
@@ -82,6 +70,7 @@ const path = [
 // ============================================================
 
 function createMask() {
+
     const mask = document.createElement("canvas");
 
     mask.width = 1000;
@@ -89,37 +78,24 @@ function createMask() {
 
     const m = mask.getContext("2d");
 
-    // Transparent background
     m.clearRect(0, 0, 1000, 1000);
 
-    m.fillStyle = "#fff";
+    m.strokeStyle = "white";
+    m.lineWidth = 145;
+    m.lineCap = "square";
+    m.lineJoin = "miter";
 
-    // --------------------
     // 4
-    // --------------------
-
     m.beginPath();
-
     m.moveTo(350, 120);
     m.lineTo(350, 530);
     m.lineTo(110, 530);
     m.lineTo(520, 120);
     m.lineTo(520, 880);
-
-    m.lineWidth = 145;
-    m.lineCap = "square";
-    m.lineJoin = "miter";
-
-    m.strokeStyle = "#fff";
     m.stroke();
 
-
-    // --------------------
     // 3
-    // --------------------
-
     m.beginPath();
-
     m.moveTo(650, 170);
 
     m.bezierCurveTo(
@@ -134,11 +110,6 @@ function createMask() {
         650, 830
     );
 
-    m.lineWidth = 145;
-    m.lineCap = "square";
-    m.lineJoin = "miter";
-
-    m.strokeStyle = "#fff";
     m.stroke();
 
     return mask;
@@ -151,19 +122,20 @@ const mask = createMask();
 // PLACEHOLDER CLIPS
 // ============================================================
 
-function drawClipOnContext(c, x, y, size, type, time) {
+function drawClip(c, x, y, size, type, time) {
 
     c.save();
 
     c.translate(x, y);
 
-    // Slight movement inside every clip
+    // Individual clip movement
     const wave =
-        Math.sin(time * 0.0025 + type * 1.7) * size * 0.08;
+        Math.sin(time * 0.0025 + type * 1.7)
+        * size * 0.08;
 
     c.translate(wave, 0);
 
-    // Clip background
+
     const gradients = [
         ["#1d3557", "#457b9d"],
         ["#283618", "#606c38"],
@@ -184,6 +156,7 @@ function drawClipOnContext(c, x, y, size, type, time) {
     g.addColorStop(1, gradients[type][1]);
 
     c.fillStyle = g;
+
     c.fillRect(
         -size / 2,
         -size / 2,
@@ -192,10 +165,11 @@ function drawClipOnContext(c, x, y, size, type, time) {
     );
 
 
-    // Fake person
+    // Head
     c.fillStyle = "#f1c27d";
 
     c.beginPath();
+
     c.arc(
         0,
         -size * 0.08,
@@ -203,6 +177,7 @@ function drawClipOnContext(c, x, y, size, type, time) {
         0,
         Math.PI * 2
     );
+
     c.fill();
 
 
@@ -210,6 +185,7 @@ function drawClipOnContext(c, x, y, size, type, time) {
     c.fillStyle = "#111";
 
     c.beginPath();
+
     c.roundRect(
         -size * 0.18,
         size * 0.05,
@@ -217,6 +193,7 @@ function drawClipOnContext(c, x, y, size, type, time) {
         size * 0.35,
         size * 0.06
     );
+
     c.fill();
 
 
@@ -225,15 +202,16 @@ function drawClipOnContext(c, x, y, size, type, time) {
     c.lineWidth = size * 0.07;
     c.lineCap = "round";
 
+    const armWave =
+        Math.sin(time * 0.006 + type)
+        * size * 0.12;
+
     c.beginPath();
 
     c.moveTo(
         size * 0.13,
         size * 0.12
     );
-
-    const armWave =
-        Math.sin(time * 0.006 + type) * size * 0.12;
 
     c.lineTo(
         size * 0.30,
@@ -261,27 +239,26 @@ function drawClipOnContext(c, x, y, size, type, time) {
 
 
 // ============================================================
-// DRAW ALL CLIPS
+// DRAW CLIPS
 // ============================================================
 
 function drawClips(c, time) {
 
     const tileSize = 105;
-
-    // Lots of tiles packed together
     const spacing = 92;
 
-    for (let y = -120; y <= 1120; y += spacing) {
+    // Starts slower and gets faster
+    const speed =
+        0.55 +
+        (time / INTRO_DURATION) * 2.2;
 
-        for (let x = -120; x <= 1120; x += spacing) {
+    const movement =
+        time * 0.055 * speed;
 
-            // Constant movement
-            const speedMultiplier =
-                0.65 +
-                (time / INTRO_DURATION) * 2.0;
 
-            const movement =
-                time * 0.055 * speedMultiplier;
+    for (let y = -200; y <= 1200; y += spacing) {
+
+        for (let x = -200; x <= 1200; x += spacing) {
 
             const offsetX =
                 ((x + movement) % 1800 + 1800) % 1800 - 900;
@@ -289,22 +266,24 @@ function drawClips(c, time) {
             const offsetY =
                 ((y + movement * 0.55) % 1500 + 1500) % 1500 - 500;
 
+
+            const gridX = Math.floor(x / spacing);
+            const gridY = Math.floor(y / spacing);
+
             const index =
-                (Math.floor(x / spacing) +
-                 Math.floor(y / spacing) +
-                 Math.floor(time / 300)) %
-                clips.length;
+                Math.abs(
+                    gridX * 7 +
+                    gridY * 13 +
+                    Math.floor(time / 300)
+                ) % 6;
 
-            const type =
-                (index + clips.length) %
-                clips.length;
 
-            drawClipOnContext(
+            drawClip(
                 c,
                 offsetX,
                 offsetY,
                 tileSize,
-                type,
+                index,
                 time
             );
         }
@@ -317,6 +296,7 @@ function drawClips(c, time) {
 // ============================================================
 
 function easeInOut(t) {
+
     return t < 0.5
         ? 2 * t * t
         : 1 - Math.pow(-2 * t + 2, 2) / 2;
@@ -327,13 +307,14 @@ function easeInOut(t) {
 // CAMERA
 // ============================================================
 
-function getCamera(t) {
+function getCamera(progress) {
 
-    const eased = easeInOut(t);
+    const eased = easeInOut(progress);
 
     const zoom =
         START_ZOOM +
         (1 - START_ZOOM) * eased;
+
 
     const position =
         eased * (path.length - 1);
@@ -347,41 +328,32 @@ function getCamera(t) {
     const local =
         position - index;
 
+
     const a = path[index];
     const b = path[index + 1];
 
-    const x =
-        a.x +
-        (b.x - a.x) * local;
-
-    const y =
-        a.y +
-        (b.y - a.y) * local;
 
     return {
-        x,
-        y,
-        zoom
+        x: a.x + (b.x - a.x) * local,
+        y: a.y + (b.y - a.y) * local,
+        zoom: zoom
     };
 }
 
 
 // ============================================================
-// MAIN SCENE
+// DRAW FRAME
 // ============================================================
 
-function drawScene(time) {
+function drawFrame(elapsed) {
 
     ctx.clearRect(0, 0, W, H);
 
-    ctx.fillStyle = "#000";
+    ctx.fillStyle = "black";
     ctx.fillRect(0, 0, W, H);
 
 
-    // --------------------------------------------------------
-    // Create temporary layer for clips
-    // --------------------------------------------------------
-
+    // Temporary clip layer
     const temp = document.createElement("canvas");
 
     temp.width = 1000;
@@ -389,13 +361,12 @@ function drawScene(time) {
 
     const tc = temp.getContext("2d");
 
-    drawClips(tc, time);
+
+    // Draw clips
+    drawClips(tc, elapsed);
 
 
-    // --------------------------------------------------------
-    // Apply original 4/3 mask
-    // --------------------------------------------------------
-
+    // Mask clips into the 4/3
     tc.globalCompositeOperation = "destination-in";
 
     tc.drawImage(
@@ -407,15 +378,16 @@ function drawScene(time) {
     tc.globalCompositeOperation = "source-over";
 
 
-    // --------------------------------------------------------
     // Camera
-    // --------------------------------------------------------
-
     const progress =
-        Math.min(time / INTRO_DURATION, 1);
+        Math.min(
+            elapsed / INTRO_DURATION,
+            1
+        );
 
     const camera =
         getCamera(progress);
+
 
     const logoSize =
         Math.max(W, H) * 1.35;
@@ -423,27 +395,25 @@ function drawScene(time) {
 
     ctx.save();
 
-    // Center screen
     ctx.translate(
         W / 2,
         H / 2
     );
 
-    // Camera zoom
+
     ctx.scale(
         camera.zoom,
         camera.zoom
     );
 
 
-    // Move camera through the 4/3
     ctx.translate(
-        -camera.x * logoSize + logoSize * 0.5,
-        -camera.y * logoSize + logoSize * 0.5
+        -camera.x * logoSize + logoSize / 2,
+        -camera.y * logoSize + logoSize / 2
     );
 
 
-    // Draw clip-filled 4/3
+    // The ONLY thing placed on screen
     ctx.drawImage(
         temp,
         0,
@@ -452,10 +422,8 @@ function drawScene(time) {
         logoSize
     );
 
+
     ctx.restore();
-
-
-    requestAnimationFrame(drawScene);
 }
 
 
@@ -465,7 +433,7 @@ function drawScene(time) {
 
 let started = false;
 
-function start() {
+document.addEventListener("click", function() {
 
     if (started) return;
 
@@ -473,27 +441,30 @@ function start() {
 
     const startTime = performance.now();
 
+
     function animate(now) {
 
         const elapsed =
             now - startTime;
 
-        drawScene(elapsed);
+
+        drawFrame(elapsed);
+
 
         if (elapsed < INTRO_DURATION) {
+
             requestAnimationFrame(animate);
+
         } else {
-            // Keep the final clip-filled 4/3 on screen
-            drawScene(INTRO_DURATION);
+
+            // Freeze on final clip-filled 4/3
+            drawFrame(INTRO_DURATION);
         }
     }
 
+
     requestAnimationFrame(animate);
-}
-
-
-// Invisible click-to-start
-document.addEventListener("click", start);
+});
 
 </script>
 
