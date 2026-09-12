@@ -3,665 +3,520 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>4/3 Graduation Intro</title>
 
 <style>
-* {
-    box-sizing: border-box;
-}
+    html,
+    body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+    }
 
-html,
-body {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: #000;
-}
-
-body {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-canvas {
-    width: 100vw;
-    height: 100vh;
-    display: block;
-}
-
-#start {
-    position: fixed;
-    inset: 0;
-    z-index: 10;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    background: #000;
-    color: #fff;
-
-    font-family: Arial, sans-serif;
-    font-size: 20px;
-    letter-spacing: 3px;
-
-    cursor: pointer;
-}
-
-#start.hidden {
-    display: none;
-}
+    canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        cursor: pointer;
+    }
 </style>
 </head>
 
 <body>
 
-<div id="start">CLICK TO START</div>
-
 <canvas id="canvas"></canvas>
 
 <script>
+"use strict";
 
-/* =========================================================
-   SETTINGS
-========================================================= */
+/*
+    ================================================
+    4/3 GRADUATION INTRO
+    GitHub Pages safe version
+    ================================================
+*/
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-const startScreen = document.getElementById("start");
+let width = 0;
+let height = 0;
+let dpr = 1;
 
-const INTRO_DURATION = 10000;
+let started = false;
+let startTime = 0;
+
+const INTRO_LENGTH = 10000;
+const START_ZOOM = 7.5;
 
 
-/* =========================================================
-   CANVAS
-========================================================= */
+// --------------------------------------------------
+// RESIZE
+// --------------------------------------------------
 
 function resizeCanvas() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-    const dpr = window.devicePixelRatio || 1;
+    width = window.innerWidth;
+    height = window.innerHeight;
 
-    canvas.width = window.innerWidth * dpr;
-    canvas.height = window.innerHeight * dpr;
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
 
-    canvas.style.width = window.innerWidth + "px";
-    canvas.style.height = window.innerHeight + "px";
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
+window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
-window.addEventListener("resize", resizeCanvas);
 
-
-/* =========================================================
-   SIX DIFFERENT PLACEHOLDER "CLIPS"
-   
-   These are intentionally different so you can clearly
-   see which clip is travelling through the 4/3.
-========================================================= */
+// --------------------------------------------------
+// PLACEHOLDER CLIPS
+// Each one looks different so movement is obvious.
+// --------------------------------------------------
 
 const clips = [
     {
-        name: "CLIP 1",
-        type: 0
+        background: "#181818",
+        foreground: "#ffffff",
+        number: "01"
     },
     {
-        name: "CLIP 2",
-        type: 1
+        background: "#303030",
+        foreground: "#d0d0d0",
+        number: "02"
     },
     {
-        name: "CLIP 3",
-        type: 2
+        background: "#101010",
+        foreground: "#bbbbbb",
+        number: "03"
     },
     {
-        name: "CLIP 4",
-        type: 3
+        background: "#3a3a3a",
+        foreground: "#ffffff",
+        number: "04"
     },
     {
-        name: "CLIP 5",
-        type: 4
+        background: "#222222",
+        foreground: "#999999",
+        number: "05"
     },
     {
-        name: "CLIP 6",
-        type: 5
+        background: "#454545",
+        foreground: "#eeeeee",
+        number: "06"
     }
 ];
 
 
-/* =========================================================
-   DRAW PLACEHOLDER CLIP
-========================================================= */
+// --------------------------------------------------
+// DRAW ONE PLACEHOLDER CLIP
+// --------------------------------------------------
 
-function drawClip(clip, x, y, width, height, time) {
+function drawClip(x, y, size, clipIndex, time) {
+
+    const clip = clips[clipIndex];
 
     ctx.save();
 
     ctx.translate(x, y);
 
-    /*
-        Each placeholder has a different appearance.
-        This makes the movement extremely obvious.
-    */
-
-    if (clip.type === 0) {
-
-        // Moving vertical stripes
-
-        ctx.fillStyle = "#ff4d4d";
-        ctx.fillRect(
-            -width / 2,
-            -height / 2,
-            width,
-            height
-        );
-
-        ctx.fillStyle = "#fff";
-
-        const movement =
-            (time * 0.35) % width;
-
-        for (
-            let i = -2;
-            i < 8;
-            i++
-        ) {
-
-            ctx.fillRect(
-                i * 100 + movement,
-                -height / 2,
-                35,
-                height
-            );
-        }
-
-    } else if (clip.type === 1) {
-
-        // Blue moving circles
-
-        ctx.fillStyle = "#287bff";
-
-        ctx.fillRect(
-            -width / 2,
-            -height / 2,
-            width,
-            height
-        );
-
-        ctx.fillStyle = "#fff";
-
-        const movement =
-            (time * 0.25) % width;
-
-        for (
-            let i = -2;
-            i < 8;
-            i++
-        ) {
-
-            ctx.beginPath();
-
-            ctx.arc(
-                i * 120 + movement,
-                Math.sin(time / 300 + i) * 50,
-                45,
-                0,
-                Math.PI * 2
-            );
-
-            ctx.fill();
-        }
-
-    } else if (clip.type === 2) {
-
-        // Green diagonal movement
-
-        ctx.fillStyle = "#21c45a";
-
-        ctx.fillRect(
-            -width / 2,
-            -height / 2,
-            width,
-            height
-        );
-
-        ctx.strokeStyle = "#fff";
-        ctx.lineWidth = 25;
-
-        const movement =
-            (time * 0.3) % 250;
-
-        for (
-            let i = -5;
-            i < 10;
-            i++
-        ) {
-
-            ctx.beginPath();
-
-            ctx.moveTo(
-                i * 150 + movement,
-                -height
-            );
-
-            ctx.lineTo(
-                i * 150 + 300 + movement,
-                height
-            );
-
-            ctx.stroke();
-        }
-
-    } else if (clip.type === 3) {
-
-        // Purple pulsing circles
-
-        ctx.fillStyle = "#8b45ff";
-
-        ctx.fillRect(
-            -width / 2,
-            -height / 2,
-            width,
-            height
-        );
-
-        const pulse =
-            60 + Math.sin(time / 150) * 20;
-
-        ctx.fillStyle = "#fff";
-
-        ctx.beginPath();
-
-        ctx.arc(
-            0,
-            0,
-            pulse,
-            0,
-            Math.PI * 2
-        );
-
-        ctx.fill();
-
-    } else if (clip.type === 4) {
-
-        // Yellow moving blocks
-
-        ctx.fillStyle = "#ffd43b";
-
-        ctx.fillRect(
-            -width / 2,
-            -height / 2,
-            width,
-            height
-        );
-
-        ctx.fillStyle = "#111";
-
-        const movement =
-            (time * 0.45) % 300;
-
-        for (
-            let i = -3;
-            i < 8;
-            i++
-        ) {
-
-            ctx.fillRect(
-                i * 140 + movement,
-                -80,
-                80,
-                160
-            );
-        }
-
-    } else {
-
-        // Black / white bouncing pattern
-
-        ctx.fillStyle = "#111";
-
-        ctx.fillRect(
-            -width / 2,
-            -height / 2,
-            width,
-            height
-        );
-
-        ctx.fillStyle = "#fff";
-
-        const bounce =
-            Math.sin(time / 180) * 100;
-
-        ctx.beginPath();
-
-        ctx.arc(
-            bounce,
-            0,
-            70,
-            0,
-            Math.PI * 2
-        );
-
-        ctx.fill();
-    }
-
-
-    /* Clip label */
-
-    ctx.fillStyle = "rgba(0,0,0,0.35)";
-
+    // Background
+    ctx.fillStyle = clip.background;
     ctx.fillRect(
-        -width / 2,
-        -height / 2,
-        width,
-        55
+        -size / 2,
+        -size / 2,
+        size,
+        size
     );
 
-    ctx.fillStyle = "#fff";
+    // Moving stripes
+    ctx.save();
 
+    ctx.rotate(-0.35);
+
+    const offset =
+        (time * (35 + clipIndex * 12)) %
+        (size * 0.5);
+
+    ctx.strokeStyle = clip.foreground;
+    ctx.globalAlpha = 0.15;
+    ctx.lineWidth = Math.max(2, size * 0.025);
+
+    for (
+        let i = -size * 2;
+        i < size * 2;
+        i += size * 0.18
+    ) {
+        ctx.beginPath();
+
+        ctx.moveTo(
+            i + offset,
+            -size * 2
+        );
+
+        ctx.lineTo(
+            i + offset + size,
+            size * 2
+        );
+
+        ctx.stroke();
+    }
+
+    ctx.restore();
+
+
+    // Fake person movement
+    const bob =
+        Math.sin(
+            time * 4 +
+            clipIndex * 1.3
+        ) * size * 0.025;
+
+
+    // Head
+    ctx.fillStyle = clip.foreground;
+
+    ctx.beginPath();
+
+    ctx.arc(
+        0,
+        -size * 0.12 + bob,
+        size * 0.12,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    // Body
+    ctx.beginPath();
+
+    ctx.roundRect(
+        -size * 0.17,
+        size * 0.02 + bob,
+        size * 0.34,
+        size * 0.30,
+        size * 0.05
+    );
+
+    ctx.fill();
+
+
+    // Waving arm
+    ctx.strokeStyle = clip.foreground;
+    ctx.lineWidth = size * 0.065;
+    ctx.lineCap = "round";
+
+    const handY =
+        -size * 0.20 +
+        Math.sin(
+            time * 5 +
+            clipIndex
+        ) * size * 0.10;
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        size * 0.08,
+        size * 0.08 + bob
+    );
+
+    ctx.lineTo(
+        size * 0.27,
+        handY
+    );
+
+    ctx.stroke();
+
+
+    // Clip number
+    ctx.globalAlpha = 0.8;
     ctx.font =
-        "bold 25px Arial";
+        "bold " +
+        Math.max(14, size * 0.08) +
+        "px Arial";
 
-    ctx.textAlign = "left";
+    ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
     ctx.fillText(
-        clip.name,
-        -width / 2 + 20,
-        -height / 2 + 28
+        "CLIP " + clip.number,
+        0,
+        size * 0.40
     );
 
     ctx.restore();
 }
 
 
-/* =========================================================
-   4/3 MASK
-========================================================= */
+// --------------------------------------------------
+// 4/3 MASK
+// --------------------------------------------------
 
-function draw43Mask(width, height) {
+function create43Mask() {
 
-    ctx.font =
-        `900 ${height * 0.78}px Arial Black, Arial, sans-serif`;
+    const mask = document.createElement("canvas");
 
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
+    mask.width = 1000;
+    mask.height = 1000;
 
-    ctx.fillStyle = "#fff";
+    const m = mask.getContext("2d");
 
-    ctx.fillText(
-        "4/3",
-        width / 2,
-        height / 2
+    /*
+        White = visible.
+        Black = transparent.
+
+        We draw the shape using thick strokes.
+    */
+
+    m.fillStyle = "#000";
+    m.fillRect(0, 0, 1000, 1000);
+
+    m.strokeStyle = "#fff";
+    m.lineWidth = 145;
+    m.lineCap = "square";
+    m.lineJoin = "miter";
+
+
+    // 4
+    m.beginPath();
+
+    m.moveTo(350, 120);
+    m.lineTo(350, 530);
+    m.lineTo(110, 530);
+    m.lineTo(520, 120);
+    m.lineTo(520, 880);
+
+    m.stroke();
+
+
+    // 3
+    m.beginPath();
+
+    m.moveTo(650, 170);
+
+    m.bezierCurveTo(
+        850, 80,
+        890, 280,
+        700, 470
     );
+
+    m.bezierCurveTo(
+        900, 500,
+        900, 850,
+        650, 830
+    );
+
+    m.stroke();
+
+    return mask;
 }
 
+const maskCanvas = create43Mask();
 
-/* =========================================================
-   PATH THROUGH THE 4/3
-========================================================= */
 
-/*
-    The first point is deliberately DEEP inside
-    the upper part of the 4.
+// --------------------------------------------------
+// CAMERA PATH
+// --------------------------------------------------
 
-    This is where the animation starts.
-
-    Then we travel around the shape.
-*/
-
-const path = [
-
-    // Start inside the 4
-    { x: 0.16, y: 0.18 },
-
-    // Move across the top
-    { x: 0.38, y: 0.18 },
-
-    // Down through the 4
-    { x: 0.30, y: 0.43 },
-
-    // Across
-    { x: 0.55, y: 0.48 },
-
-    // Down toward the 3
-    { x: 0.70, y: 0.62 },
-
-    // Final movement
-    { x: 0.82, y: 0.78 }
+const cameraPath = [
+    { x: 0.18, y: 0.16 },
+    { x: 0.36, y: 0.17 },
+    { x: 0.29, y: 0.39 },
+    { x: 0.51, y: 0.42 },
+    { x: 0.51, y: 0.63 },
+    { x: 0.75, y: 0.65 },
+    { x: 0.78, y: 0.82 }
 ];
 
 
-/* =========================================================
-   EASING
-========================================================= */
+// --------------------------------------------------
+// EASING
+// --------------------------------------------------
 
 function easeInOut(t) {
 
-    return (
-        t < 0.5
-            ? 4 * t * t * t
-            : 1 -
-              Math.pow(-2 * t + 2, 3) / 2
-    );
-}
-
-
-/*
-    Used specifically for the acceleration
-    of clip switching.
-*/
-
-function acceleration(t) {
-
-    return Math.pow(t, 3.2);
-}
-
-
-/* =========================================================
-   MAIN ANIMATION
-========================================================= */
-
-let animationStart = null;
-
-function render(timestamp) {
-
-    if (animationStart === null) {
-        animationStart = timestamp;
+    if (t < 0.5) {
+        return 2 * t * t;
     }
 
-    const elapsed =
-        timestamp - animationStart;
-
-    const progress =
-        Math.min(
-            elapsed / INTRO_DURATION,
-            1
-        );
+    return 1 -
+        Math.pow(-2 * t + 2, 2) / 2;
+}
 
 
-    const screenWidth =
-        window.innerWidth;
+// --------------------------------------------------
+// CAMERA POSITION
+// --------------------------------------------------
 
-    const screenHeight =
-        window.innerHeight;
+function getCameraPosition(progress) {
 
+    const scaled =
+        progress *
+        (cameraPath.length - 1);
 
-    /* -----------------------------------------------------
-       BACKGROUND
-    ----------------------------------------------------- */
-
-    ctx.clearRect(
-        0,
-        0,
-        screenWidth,
-        screenHeight
+    const index = Math.min(
+        Math.floor(scaled),
+        cameraPath.length - 2
     );
 
-    ctx.fillStyle = "#000";
+    const local =
+        scaled - index;
 
-    ctx.fillRect(
+    const a = cameraPath[index];
+    const b = cameraPath[index + 1];
+
+    return {
+        x:
+            a.x +
+            (b.x - a.x) * local,
+
+        y:
+            a.y +
+            (b.y - a.y) * local
+    };
+}
+
+
+// --------------------------------------------------
+// DRAW THE CLIP-FILLED 4/3
+// --------------------------------------------------
+
+function drawLogo(time, zoom, cameraX, cameraY) {
+
+    /*
+        Work in a square coordinate system.
+        This makes the 4/3 shape independent
+        of screen resolution.
+    */
+
+    const logoSize =
+        Math.min(width, height) * 1.25;
+
+    const tileSize =
+        logoSize * 0.24;
+
+
+    // Temporary canvas
+    const layer =
+        document.createElement("canvas");
+
+    layer.width =
+        Math.ceil(width * dpr);
+
+    layer.height =
+        Math.ceil(height * dpr);
+
+    const layerCtx =
+        layer.getContext("2d");
+
+    layerCtx.setTransform(
+        dpr,
         0,
         0,
-        screenWidth,
-        screenHeight
+        dpr,
+        0,
+        0
     );
 
 
-    /* -----------------------------------------------------
-       SIZE OF THE 4/3
-    ----------------------------------------------------- */
+    // Fill the layer with moving clips
+    for (
+        let row = -5;
+        row <= 7;
+        row++
+    ) {
 
-    const logoWidth =
-        Math.min(
-            screenWidth * 0.70,
-            1000
-        );
+        for (
+            let col = -5;
+            col <= 7;
+            col++
+        ) {
 
-    const logoHeight =
-        Math.min(
-            screenHeight * 0.70,
-            750
-        );
-
-
-    /* -----------------------------------------------------
-       CAMERA ZOOM
-       
-       IMPORTANT:
-       Starts VERY close.
-    ----------------------------------------------------- */
-
-    const zoomProgress =
-        easeInOut(progress);
-
-    const START_ZOOM = 8.5;
-    const END_ZOOM = 1;
-
-    const zoom =
-        START_ZOOM +
-        (END_ZOOM - START_ZOOM)
-        * zoomProgress;
+            const clipIndex =
+                Math.abs(
+                    row * 7 + col
+                ) % clips.length;
 
 
-    /* -----------------------------------------------------
-       CAMERA START POSITION
-       
-       We start inside the 4.
-    ----------------------------------------------------- */
-
-    const cameraStartX =
-        logoWidth * 0.16;
-
-    const cameraStartY =
-        logoHeight * 0.18;
+            const movementX =
+                Math.sin(
+                    time * 1.7 +
+                    row * 1.8 +
+                    col
+                ) *
+                tileSize *
+                0.10;
 
 
-    /*
-        Slowly move camera from the starting point
-        toward the centre as we zoom out.
-    */
-
-    const cameraX =
-        cameraStartX +
-        (
-            logoWidth / 2 -
-            cameraStartX
-        ) * zoomProgress;
-
-    const cameraY =
-        cameraStartY +
-        (
-            logoHeight / 2 -
-            cameraStartY
-        ) * zoomProgress;
+            const movementY =
+                Math.cos(
+                    time * 1.5 +
+                    col * 1.4 +
+                    row
+                ) *
+                tileSize *
+                0.10;
 
 
-    /* -----------------------------------------------------
-       CLIP SPEED
-    ----------------------------------------------------- */
+            const x =
+                width / 2 +
+                col * tileSize * 0.82 +
+                movementX;
 
-    const speed =
-        acceleration(progress);
+
+            const y =
+                height / 2 +
+                row * tileSize * 0.82 +
+                movementY;
+
+
+            drawClip(
+                x,
+                y,
+                tileSize,
+                clipIndex,
+                time
+            );
+        }
+    }
 
 
     /*
-        Number of times we've travelled
-        through the path.
-
-        Very slow initially.
-        Ridiculously fast near the end.
+        Apply the 4/3 mask.
     */
 
-    const pathProgress =
-        speed * (path.length - 1);
+    layerCtx.globalCompositeOperation =
+        "destination-in";
 
-    const pathIndex =
-        Math.min(
-            Math.floor(pathProgress),
-            path.length - 2
-        );
+    layerCtx.drawImage(
+        maskCanvas,
+        width / 2 - logoSize / 2,
+        height / 2 - logoSize / 2,
+        logoSize,
+        logoSize
+    );
 
-    const localProgress =
-        pathProgress - pathIndex;
-
-
-    const pointA =
-        path[pathIndex];
-
-    const pointB =
-        path[pathIndex + 1];
-
-
-    const clipX =
-        pointA.x +
-        (
-            pointB.x -
-            pointA.x
-        ) * localProgress;
-
-    const clipY =
-        pointA.y +
-        (
-            pointB.y -
-            pointA.y
-        ) * localProgress;
-
-
-    /* -----------------------------------------------------
-       CLIP SWITCHING
-    ----------------------------------------------------- */
 
     /*
-        The number gets increasingly large,
-        meaning the clips switch faster and faster.
+        Draw the clip-filled logo with
+        the camera zoom applied.
     */
-
-    const clipSwitches =
-        Math.floor(
-            progress * progress * 45
-        );
-
-    const currentClip =
-        clips[
-            clipSwitches % clips.length
-        ];
-
-
-    /* -----------------------------------------------------
-       CAMERA TRANSFORM
-    ----------------------------------------------------- */
 
     ctx.save();
 
     ctx.translate(
-        screenWidth / 2,
-        screenHeight / 2
+        width / 2,
+        height / 2
     );
 
     ctx.scale(
@@ -669,154 +524,40 @@ function render(timestamp) {
         zoom
     );
 
-    /*
-        Move the camera around the 4/3.
-    */
-
     ctx.translate(
         -cameraX,
         -cameraY
     );
 
-
-    /* -----------------------------------------------------
-       VIDEO LAYER
-    ----------------------------------------------------- */
-
-    ctx.save();
-
-    /*
-        Clip ONLY the moving footage to 4/3.
-    */
-
-    drawClip(
-        currentClip,
-
-        clipX * logoWidth,
-        clipY * logoHeight,
-
-        logoWidth * 0.60,
-        logoHeight * 0.65,
-
-        Math.sin(elapsed / 300) * 0.02
-    );
-
-
-    /*
-        When things become fast,
-        briefly layer another clip in.
-    */
-
-    if (progress > 0.45) {
-
-        const secondClip =
-            clips[
-                (clipSwitches + 1)
-                % clips.length
-            ];
-
-        drawClip(
-            secondClip,
-
-            clipX * logoWidth +
-            Math.sin(elapsed / 70) * 100,
-
-            clipY * logoHeight,
-
-            logoWidth * 0.55,
-            logoHeight * 0.60,
-
-            -0.02
-        );
-    }
-
-
-    /* -----------------------------------------------------
-       MASK
-    ----------------------------------------------------- */
-
-    ctx.globalCompositeOperation =
-        "destination-in";
-
-    draw43Mask(
-        logoWidth,
-        logoHeight
+    ctx.drawImage(
+        layer,
+        -width / 2,
+        -height / 2,
+        width,
+        height
     );
 
     ctx.restore();
+}
 
 
-    /* -----------------------------------------------------
-       CAMERA RESTORE
-    ----------------------------------------------------- */
+// --------------------------------------------------
+// ANIMATION LOOP
+// --------------------------------------------------
 
-    ctx.restore();
+function animate(timestamp) {
 
+    // Before clicking:
+    // completely black screen.
+    if (!started) {
 
-    /* -----------------------------------------------------
-       FINAL TRANSITION
-    ----------------------------------------------------- */
-
-    /*
-        NO FLASH.
-
-        NO SECOND 4/3.
-
-        Instead, the footage itself fades
-        into ONE clean white 4/3.
-    */
-
-    if (progress > 0.86) {
-
-        const fade =
-            (progress - 0.86) / 0.14;
-
-        ctx.save();
-
-        ctx.globalAlpha =
-            Math.min(
-                fade,
-                1
-            );
-
-        ctx.font =
-            `900 ${Math.min(screenWidth, screenHeight) * 0.32}px Arial Black, Arial, sans-serif`;
-
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-
-        ctx.fillStyle = "#fff";
-
-        ctx.fillText(
-            "4/3",
-            screenWidth / 2,
-            screenHeight / 2
-        );
-
-        ctx.restore();
-    }
-
-
-    /* -----------------------------------------------------
-       LOOP
-    ----------------------------------------------------- */
-
-    if (progress < 1) {
-
-        requestAnimationFrame(render);
-
-    } else {
-
-        /*
-            Final frame:
-            one clean white 4/3.
-        */
-
-        ctx.clearRect(
+        ctx.setTransform(
+            dpr,
             0,
             0,
-            screenWidth,
-            screenHeight
+            dpr,
+            0,
+            0
         );
 
         ctx.fillStyle = "#000";
@@ -824,42 +565,140 @@ function render(timestamp) {
         ctx.fillRect(
             0,
             0,
-            screenWidth,
-            screenHeight
+            width,
+            height
         );
 
-        ctx.font =
-            `900 ${Math.min(screenWidth, screenHeight) * 0.32}px Arial Black, Arial, sans-serif`;
+        requestAnimationFrame(animate);
 
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-
-        ctx.fillStyle = "#fff";
-
-        ctx.fillText(
-            "4/3",
-            screenWidth / 2,
-            screenHeight / 2
-        );
+        return;
     }
+
+
+    const elapsed =
+        timestamp - startTime;
+
+
+    const rawProgress =
+        Math.min(
+            elapsed / INTRO_LENGTH,
+            1
+        );
+
+
+    /*
+        Smooth zoom-out.
+    */
+
+    const progress =
+        easeInOut(rawProgress);
+
+
+    const zoom =
+        START_ZOOM -
+        (START_ZOOM - 1) *
+        progress;
+
+
+    /*
+        Camera moves through the 4/3
+        while zooming out.
+    */
+
+    const camera =
+        getCameraPosition(progress);
+
+
+    const cameraX =
+        (camera.x - 0.5) *
+        Math.min(width, height);
+
+
+    const cameraY =
+        (camera.y - 0.5) *
+        Math.min(width, height);
+
+
+    // Clear screen
+    ctx.setTransform(
+        dpr,
+        0,
+        0,
+        dpr,
+        0,
+        0
+    );
+
+    ctx.fillStyle = "#000";
+
+    ctx.fillRect(
+        0,
+        0,
+        width,
+        height
+    );
+
+
+    // Draw the actual clip-filled 4/3
+    drawLogo(
+        elapsed / 1000,
+        zoom,
+        cameraX,
+        cameraY
+    );
+
+
+    /*
+        IMPORTANT:
+
+        At 100% progress we DO NOT:
+        - fade to white
+        - draw another 4/3
+        - overlay a logo
+        - flash anything
+
+        We simply keep drawing the exact same
+        clip-filled 4/3 at zoom = 1.
+
+        This is the final frame.
+    */
+
+
+    requestAnimationFrame(animate);
 }
 
 
-/* =========================================================
-   START
-========================================================= */
+// --------------------------------------------------
+// START
+// --------------------------------------------------
 
-startScreen.addEventListener(
-    "click",
-    () => {
+canvas.addEventListener(
+    "pointerdown",
+    function () {
 
-        startScreen.classList.add("hidden");
+        if (started) {
+            return;
+        }
 
-        animationStart = null;
+        started = true;
+        startTime = performance.now();
 
-        requestAnimationFrame(render);
+        requestAnimationFrame(animate);
     }
 );
+
+
+// Initial frame
+ctx.fillStyle = "#000";
+
+ctx.fillRect(
+    0,
+    0,
+    width,
+    height
+);
+
+requestAnimationFrame(animate);
 
 </script>
 
