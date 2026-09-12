@@ -20,474 +20,514 @@
       background: #000;
     }
 
-    body {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
     canvas {
       width: 100vw;
       height: 100vh;
       display: block;
-      object-fit: contain;
-    }
-
-    #start {
-      position: fixed;
-      inset: 0;
-      z-index: 10;
-
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      background: #000;
-      color: white;
-
-      font-family: Arial, sans-serif;
-      font-size: 20px;
-      letter-spacing: 2px;
-
-      cursor: pointer;
-    }
-
-    #start.hidden {
-      display: none;
     }
   </style>
 </head>
 
 <body>
 
-  <div id="start">
-    CLICK TO START
-  </div>
+<canvas id="canvas"></canvas>
 
-  <canvas id="canvas"></canvas>
+<script>
 
-  <script>
-    // =========================================================
-    // SETTINGS
-    // =========================================================
+// =========================================================
+// SETTINGS
+// =========================================================
 
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
 
-    const startScreen = document.getElementById("start");
 
-    // Placeholder video.
-    // Later, replace these with:
-    //
-    // "videos/clip1.mp4"
-    // "videos/clip2.mp4"
-    // etc.
-    //
-    const VIDEO_URLS = [
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-    ];
+// Your six clips
+const VIDEO_URLS = [
+  "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+  "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+  "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+  "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+  "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+  "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
+];
 
-    const videos = [];
+const videos = [];
 
-    // Animation length
-    const INTRO_DURATION = 6000;
 
-    // =========================================================
-    // CANVAS
-    // =========================================================
+// Zoom duration
+const INTRO_DURATION = 6000;
 
-    function resizeCanvas() {
-      const dpr = window.devicePixelRatio || 1;
 
-      canvas.width = window.innerWidth * dpr;
-      canvas.height = window.innerHeight * dpr;
+// How often the clips change positions
+const SWAP_INTERVAL = 800;
 
-      canvas.style.width = window.innerWidth + "px";
-      canvas.style.height = window.innerHeight + "px";
 
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+// =========================================================
+// CANVAS
+// =========================================================
+
+function resizeCanvas() {
+
+  const dpr = window.devicePixelRatio || 1;
+
+  canvas.width = window.innerWidth * dpr;
+  canvas.height = window.innerHeight * dpr;
+
+  canvas.style.width = window.innerWidth + "px";
+  canvas.style.height = window.innerHeight + "px";
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+resizeCanvas();
+
+window.addEventListener("resize", resizeCanvas);
+
+
+// =========================================================
+// OFFSCREEN CANVAS
+// =========================================================
+
+// Created ONCE.
+// Not every frame.
+
+const offscreen = document.createElement("canvas");
+const offCtx = offscreen.getContext("2d");
+
+
+// =========================================================
+// CREATE VIDEOS
+// =========================================================
+
+VIDEO_URLS.forEach((url, index) => {
+
+  const video = document.createElement("video");
+
+  video.src = url;
+
+  video.muted = true;
+  video.loop = true;
+  video.autoplay = false;
+  video.playsInline = true;
+  video.crossOrigin = "anonymous";
+
+  video.addEventListener("loadeddata", () => {
+
+    video.currentTime = index * 0.3;
+
+  });
+
+  videos.push(video);
+});
+
+
+// =========================================================
+// START VIDEOS
+// =========================================================
+
+async function startVideos() {
+
+  for (const video of videos) {
+
+    try {
+      await video.play();
+    } catch (error) {
+      console.log("Video waiting for permission...");
     }
 
-    resizeCanvas();
-    window.addEventListener("resize", resizeCanvas);
+  }
+}
 
 
-    // =========================================================
-    // CREATE VIDEOS
-    // =========================================================
+// =========================================================
+// DRAW VIDEO WITH COVER CROP
+// =========================================================
 
-    function createVideos() {
+function drawVideoCover(
+  video,
+  x,
+  y,
+  width,
+  height
+) {
 
-      VIDEO_URLS.forEach((url, index) => {
+  if (
+    !video.videoWidth ||
+    !video.videoHeight
+  ) {
+    return;
+  }
 
-        const video = document.createElement("video");
 
-        video.src = url;
+  const videoRatio =
+    video.videoWidth / video.videoHeight;
 
-        video.muted = true;
-        video.loop = true;
-        video.autoplay = false;
-        video.playsInline = true;
-        video.crossOrigin = "anonymous";
+  const boxRatio =
+    width / height;
 
-        video.addEventListener("loadeddata", () => {
 
-          // Start at slightly different points
-          // so the clips don't look identical.
-          video.currentTime = index * 0.3;
+  let sourceWidth;
+  let sourceHeight;
+  let sourceX;
+  let sourceY;
 
-        });
 
-        videos.push(video);
-      });
-    }
+  if (videoRatio > boxRatio) {
 
-    createVideos();
+    sourceHeight = video.videoHeight;
 
+    sourceWidth =
+      sourceHeight * boxRatio;
 
-    // =========================================================
-    // WAIT UNTIL VIDEOS ARE READY
-    // =========================================================
+    sourceX =
+      (video.videoWidth - sourceWidth) / 2;
 
-    async function startVideos() {
+    sourceY = 0;
 
-      for (const video of videos) {
+  } else {
 
-        try {
-          await video.play();
-        } catch (error) {
-          console.log("Video waiting for permission...");
-        }
+    sourceWidth = video.videoWidth;
 
-      }
-    }
+    sourceHeight =
+      sourceWidth / boxRatio;
 
+    sourceX = 0;
 
-    // =========================================================
-    // DRAW A VIDEO TILE
-    // =========================================================
+    sourceY =
+      (video.videoHeight - sourceHeight) / 2;
+  }
 
-    function drawVideoCover(video, x, y, width, height) {
 
-      if (
-        !video.videoWidth ||
-        !video.videoHeight
-      ) {
-        return;
-      }
+  offCtx.drawImage(
+    video,
 
-      const videoRatio =
-        video.videoWidth / video.videoHeight;
+    sourceX,
+    sourceY,
+    sourceWidth,
+    sourceHeight,
 
-      const boxRatio =
-        width / height;
+    x,
+    y,
+    width,
+    height
+  );
+}
 
-      let sourceWidth;
-      let sourceHeight;
-      let sourceX;
-      let sourceY;
 
-      if (videoRatio > boxRatio) {
+// =========================================================
+// CLIP ORDER
+// =========================================================
 
-        sourceHeight = video.videoHeight;
+// Starts as:
+//
+// 1 2 3
+// 4 5 6
+//
+// Then:
+//
+// 2 3 4
+// 5 6 1
+//
+// Then:
+//
+// 3 4 5
+// 6 1 2
+//
+// etc.
 
-        sourceWidth =
-          sourceHeight * boxRatio;
+let clipOffset = 0;
+let lastSwap = 0;
 
-        sourceX =
-          (video.videoWidth - sourceWidth) / 2;
 
-        sourceY = 0;
+function updateClipOrder(time) {
 
-      } else {
+  if (
+    time - lastSwap >= SWAP_INTERVAL
+  ) {
 
-        sourceWidth = video.videoWidth;
+    clipOffset =
+      (clipOffset + 1) % videos.length;
 
-        sourceHeight =
-          sourceWidth / boxRatio;
+    lastSwap = time;
+  }
+}
 
-        sourceX = 0;
 
-        sourceY =
-          (video.videoHeight - sourceHeight) / 2;
-      }
+// =========================================================
+// DRAW THE 4/3
+// =========================================================
 
-      ctx.drawImage(
-        video,
+function drawMaskedVideos(width, height) {
 
-        sourceX,
-        sourceY,
-        sourceWidth,
-        sourceHeight,
+  offCtx.clearRect(
+    0,
+    0,
+    width,
+    height
+  );
 
-        x,
-        y,
-        width,
-        height
-      );
-    }
 
+  // Six video tiles
 
-    // =========================================================
-    // CREATE THE 4/3 MASK
-    // =========================================================
+  const tileWidth =
+    width / 3;
 
-    function drawMaskedVideos(width, height) {
+  const tileHeight =
+    height / 2;
 
-      /*
-        First draw the six videos onto the canvas.
 
-        Then use "destination-in" to keep ONLY
-        the areas where the text 4/3 exists.
-      */
+  for (let i = 0; i < 6; i++) {
 
-      const tileWidth = width / 3;
-      const tileHeight = height / 2;
+    const column =
+      i % 3;
 
-      // Six video tiles
-      for (let i = 0; i < 6; i++) {
+    const row =
+      Math.floor(i / 3);
 
-        const column = i % 3;
-        const row = Math.floor(i / 3);
 
-        const x = column * tileWidth;
-        const y = row * tileHeight;
+    const x =
+      column * tileWidth;
 
-        drawVideoCover(
-          videos[i],
-          x,
-          y,
-          tileWidth,
-          tileHeight
-        );
-      }
+    const y =
+      row * tileHeight;
 
-      // Save the video layer
-      ctx.save();
 
-      // Everything after this is clipped to the text
-      ctx.globalCompositeOperation = "destination-in";
+    // Rotate which clip occupies each tile
+    const videoIndex =
+      (i + clipOffset) % videos.length;
 
-      ctx.font =
-        `900 ${height * 0.75}px Arial Black, Arial, sans-serif`;
 
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
+    drawVideoCover(
+      videos[videoIndex],
+      x,
+      y,
+      tileWidth,
+      tileHeight
+    );
+  }
 
-      ctx.fillStyle = "#fff";
 
-      ctx.fillText(
-        "4/3",
-        width / 2,
-        height / 2
-      );
+  // =======================================================
+  // ORIGINAL 4/3 MASK
+  // =======================================================
 
-      ctx.restore();
-    }
+  offCtx.save();
 
+  offCtx.globalCompositeOperation =
+    "destination-in";
 
-    // =========================================================
-    // DRAW THE INTRO
-    // =========================================================
 
-    function render(time) {
+  offCtx.font =
+    `900 ${height * 0.75}px Arial Black, Arial, sans-serif`;
 
-      const screenWidth = window.innerWidth;
-      const screenHeight = window.innerHeight;
+  offCtx.textAlign =
+    "center";
 
-      ctx.clearRect(
-        0,
-        0,
-        screenWidth,
-        screenHeight
-      );
+  offCtx.textBaseline =
+    "middle";
 
-      // Black background
-      ctx.fillStyle = "#000";
+  offCtx.fillStyle =
+    "#fff";
 
-      ctx.fillRect(
-        0,
-        0,
-        screenWidth,
-        screenHeight
-      );
 
+  offCtx.fillText(
+    "4/3",
+    width / 2,
+    height / 2
+  );
 
-      // -------------------------------------------------------
-      // ANIMATION PROGRESS
-      // -------------------------------------------------------
 
-      const progress =
-        Math.min(time / INTRO_DURATION, 1);
+  offCtx.restore();
+}
 
 
-      /*
-        We want:
+// =========================================================
+// INTRO
+// =========================================================
 
-        START:
-        Extremely zoomed in.
+let started = false;
+let startTime = 0;
 
-        END:
-        Full 4/3 visible.
-      */
 
-      const startScale = 3.8;
-      const endScale = 1;
+function render(time) {
 
-      // Smooth ease-out
-      const eased =
-        1 - Math.pow(1 - progress, 3);
+  const screenWidth =
+    window.innerWidth;
 
-      const scale =
-        startScale +
-        (endScale - startScale) * eased;
+  const screenHeight =
+    window.innerHeight;
 
 
-      // -------------------------------------------------------
-      // SIZE OF THE 4/3
-      // -------------------------------------------------------
+  // Black background
 
-      const logoWidth =
-        Math.min(
-          screenWidth * 0.75,
-          1000
-        );
+  ctx.clearRect(
+    0,
+    0,
+    screenWidth,
+    screenHeight
+  );
 
-      const logoHeight =
-        Math.min(
-          screenHeight * 0.75,
-          700
-        );
+  ctx.fillStyle = "#000";
 
+  ctx.fillRect(
+    0,
+    0,
+    screenWidth,
+    screenHeight
+  );
 
-      // -------------------------------------------------------
-      // DRAW INTO AN OFFSCREEN CANVAS
-      // -------------------------------------------------------
 
-      const offscreen =
-        document.createElement("canvas");
+  if (!started) {
 
-      offscreen.width = logoWidth;
-      offscreen.height = logoHeight;
+    requestAnimationFrame(render);
 
-      const offCtx =
-        offscreen.getContext("2d");
+    return;
+  }
 
 
-      // Temporarily switch context
-      const oldCanvas = canvas;
+  // =======================================================
+  // PROGRESS
+  // =======================================================
 
-      // Draw the videos directly using our main context
-      // after transforming it.
+  const elapsed =
+    time - startTime;
 
-      ctx.save();
 
-      ctx.translate(
-        screenWidth / 2,
-        screenHeight / 2
-      );
+  const progress =
+    Math.min(
+      elapsed / INTRO_DURATION,
+      1
+    );
 
-      ctx.scale(
-        scale,
-        scale
-      );
 
-      ctx.translate(
-        -logoWidth / 2,
-        -logoHeight / 2
-      );
+  // Smooth zoom out
 
-      // Create a transparent layer
-      ctx.save();
+  const eased =
+    1 - Math.pow(1 - progress, 3);
 
-      ctx.globalCompositeOperation =
-        "source-over";
 
-      drawMaskedVideos(
-        logoWidth,
-        logoHeight
-      );
+  const startScale = 3.8;
+  const endScale = 1;
 
-      ctx.restore();
 
-      ctx.restore();
+  const scale =
+    startScale +
+    (endScale - startScale) * eased;
 
 
-      // -------------------------------------------------------
-      // FINAL 4/3 FLASH
-      // -------------------------------------------------------
+  // =======================================================
+  // LOGO SIZE
+  // =======================================================
 
-      if (progress > 0.88) {
+  const logoWidth =
+    Math.min(
+      screenWidth * 0.75,
+      1000
+    );
 
-        const flashProgress =
-          (progress - 0.88) / 0.12;
 
-        const alpha =
-          Math.sin(
-            flashProgress * Math.PI
-          );
+  const logoHeight =
+    Math.min(
+      screenHeight * 0.75,
+      700
+    );
 
-        ctx.fillStyle =
-          `rgba(255,255,255,${alpha * 0.25})`;
 
-        ctx.fillRect(
-          0,
-          0,
-          screenWidth,
-          screenHeight
-        );
-      }
+  // Make sure offscreen canvas is the right size
 
+  if (
+    offscreen.width !== Math.floor(logoWidth) ||
+    offscreen.height !== Math.floor(logoHeight)
+  ) {
 
-      // -------------------------------------------------------
-      // END
-      // -------------------------------------------------------
+    offscreen.width =
+      Math.floor(logoWidth);
 
-      if (progress >= 1) {
+    offscreen.height =
+      Math.floor(logoHeight);
+  }
 
-        // Keep the final 4/3 on screen.
-        ctx.save();
 
-        ctx.fillStyle = "#fff";
+  // =======================================================
+  // UPDATE CLIP POSITIONS
+  // =======================================================
 
-        ctx.font =
-          `900 ${Math.min(screenWidth, screenHeight) * 0.32}px Arial Black, Arial, sans-serif`;
+  updateClipOrder(time);
 
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
 
-        ctx.fillText(
-          "4/3",
-          screenWidth / 2,
-          screenHeight / 2
-        );
+  // =======================================================
+  // BUILD 4/3
+  // =======================================================
 
-        ctx.restore();
-      }
+  drawMaskedVideos(
+    logoWidth,
+    logoHeight
+  );
 
-      requestAnimationFrame(render);
-    }
 
+  // =======================================================
+  // DRAW ZOOMED 4/3
+  // =======================================================
 
-    // =========================================================
-    // START
-    // =========================================================
+  const drawWidth =
+    logoWidth * scale;
 
-    startScreen.addEventListener("click", async () => {
+  const drawHeight =
+    logoHeight * scale;
 
-      startScreen.classList.add("hidden");
 
-      await startVideos();
+  const x =
+    screenWidth / 2 -
+    drawWidth / 2;
 
-      requestAnimationFrame(render);
-    });
+  const y =
+    screenHeight / 2 -
+    drawHeight / 2;
 
-  </script>
+
+  ctx.drawImage(
+    offscreen,
+    x,
+    y,
+    drawWidth,
+    drawHeight
+  );
+
+
+  requestAnimationFrame(render);
+}
+
+
+// =========================================================
+// CLICK ANYWHERE TO START
+// =========================================================
+
+document.addEventListener(
+  "click",
+  async () => {
+
+    if (started) return;
+
+    started = true;
+
+    startTime =
+      performance.now();
+
+    await startVideos();
+
+    requestAnimationFrame(render);
+  }
+);
+
+
+// =========================================================
+// START RENDER LOOP
+// =========================================================
+
+requestAnimationFrame(render);
+
+</script>
 
 </body>
 </html>
