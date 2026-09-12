@@ -128,7 +128,6 @@ function drawClip(c, x, y, size, type, time) {
 
     c.translate(x, y);
 
-    // Individual clip movement
     const wave =
         Math.sin(time * 0.0025 + type * 1.7)
         * size * 0.08;
@@ -247,7 +246,6 @@ function drawClips(c, time) {
     const tileSize = 105;
     const spacing = 92;
 
-    // Starts slower and gets faster
     const speed =
         0.55 +
         (time / INTRO_DURATION) * 2.2;
@@ -353,7 +351,6 @@ function drawFrame(elapsed) {
     ctx.fillRect(0, 0, W, H);
 
 
-    // Temporary clip layer
     const temp = document.createElement("canvas");
 
     temp.width = 1000;
@@ -362,11 +359,9 @@ function drawFrame(elapsed) {
     const tc = temp.getContext("2d");
 
 
-    // Draw clips
     drawClips(tc, elapsed);
 
 
-    // Mask clips into the 4/3
     tc.globalCompositeOperation = "destination-in";
 
     tc.drawImage(
@@ -378,7 +373,6 @@ function drawFrame(elapsed) {
     tc.globalCompositeOperation = "source-over";
 
 
-    // Camera
     const progress =
         Math.min(
             elapsed / INTRO_DURATION,
@@ -408,12 +402,11 @@ function drawFrame(elapsed) {
 
 
     ctx.translate(
-        -camera.x * logoSize + logoSize / 2,
-        -camera.y * logoSize + logoSize / 2
+        -camera.x * logoSize,
+        -camera.y * logoSize
     );
 
 
-    // The ONLY thing placed on screen
     ctx.drawImage(
         temp,
         0,
@@ -457,7 +450,6 @@ document.addEventListener("click", function() {
 
         } else {
 
-            // Freeze on final clip-filled 4/3
             drawFrame(INTRO_DURATION);
         }
     }
