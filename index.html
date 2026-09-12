@@ -6,21 +6,20 @@
 <title>4/3 Graduation Intro</title>
 
 <style>
-    html,
-    body {
+    html, body {
         margin: 0;
         padding: 0;
         width: 100%;
         height: 100%;
         overflow: hidden;
-        background: #000;
+        background: black;
     }
 
     canvas {
         display: block;
-        width: 100%;
-        height: 100%;
-        background: #000;
+        width: 100vw;
+        height: 100vh;
+        background: black;
         cursor: pointer;
     }
 </style>
@@ -33,160 +32,157 @@
 <script>
 "use strict";
 
-/*
-    ================================================
-    4/3 GRADUATION INTRO
-    GitHub Pages safe version
-    ================================================
-*/
-
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-let width = 0;
-let height = 0;
-let dpr = 1;
+let W = 0;
+let H = 0;
+let DPR = 1;
 
 let started = false;
 let startTime = 0;
 
-const INTRO_LENGTH = 10000;
+const DURATION = 10000;
 const START_ZOOM = 7.5;
 
 
-// --------------------------------------------------
+// ==================================================
 // RESIZE
-// --------------------------------------------------
+// ==================================================
 
-function resizeCanvas() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
 
-    width = window.innerWidth;
-    height = window.innerHeight;
+    W = window.innerWidth;
+    H = window.innerHeight;
 
-    canvas.width = Math.floor(width * dpr);
-    canvas.height = Math.floor(height * dpr);
+    canvas.width = W * DPR;
+    canvas.height = H * DPR;
 
-    canvas.style.width = width + "px";
-    canvas.style.height = height + "px";
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
 
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
 }
 
-window.addEventListener("resize", resizeCanvas);
-resizeCanvas();
+window.addEventListener("resize", resize);
+resize();
 
 
-// --------------------------------------------------
-// PLACEHOLDER CLIPS
-// Each one looks different so movement is obvious.
-// --------------------------------------------------
+// ==================================================
+// DIFFERENT PLACEHOLDER CLIPS
+// ==================================================
 
 const clips = [
     {
-        background: "#181818",
-        foreground: "#ffffff",
-        number: "01"
+        bg: "#171717",
+        fg: "#ffffff",
+        id: "01"
     },
     {
-        background: "#303030",
-        foreground: "#d0d0d0",
-        number: "02"
+        bg: "#303030",
+        fg: "#d0d0d0",
+        id: "02"
     },
     {
-        background: "#101010",
-        foreground: "#bbbbbb",
-        number: "03"
+        bg: "#111111",
+        fg: "#bbbbbb",
+        id: "03"
     },
     {
-        background: "#3a3a3a",
-        foreground: "#ffffff",
-        number: "04"
+        bg: "#3b3b3b",
+        fg: "#ffffff",
+        id: "04"
     },
     {
-        background: "#222222",
-        foreground: "#999999",
-        number: "05"
+        bg: "#242424",
+        fg: "#999999",
+        id: "05"
     },
     {
-        background: "#454545",
-        foreground: "#eeeeee",
-        number: "06"
+        bg: "#454545",
+        fg: "#eeeeee",
+        id: "06"
     }
 ];
 
 
-// --------------------------------------------------
-// DRAW ONE PLACEHOLDER CLIP
-// --------------------------------------------------
+// ==================================================
+// DRAW ONE CLIP
+// IMPORTANT: RECEIVES A CONTEXT
+// ==================================================
 
-function drawClip(x, y, size, clipIndex, time) {
+function drawClip(target, x, y, size, index, time) {
 
-    const clip = clips[clipIndex];
+    const clip = clips[index];
 
-    ctx.save();
+    target.save();
 
-    ctx.translate(x, y);
+    target.translate(x, y);
+
 
     // Background
-    ctx.fillStyle = clip.background;
-    ctx.fillRect(
+    target.fillStyle = clip.bg;
+
+    target.fillRect(
         -size / 2,
         -size / 2,
         size,
         size
     );
 
+
     // Moving stripes
-    ctx.save();
+    target.save();
 
-    ctx.rotate(-0.35);
+    target.rotate(-0.35);
 
-    const offset =
-        (time * (35 + clipIndex * 12)) %
-        (size * 0.5);
+    const movement =
+        (time * (35 + index * 10)) %
+        (size * 0.45);
 
-    ctx.strokeStyle = clip.foreground;
-    ctx.globalAlpha = 0.15;
-    ctx.lineWidth = Math.max(2, size * 0.025);
+    target.strokeStyle = clip.fg;
+    target.globalAlpha = 0.16;
+    target.lineWidth = Math.max(2, size * 0.025);
 
     for (
         let i = -size * 2;
         i < size * 2;
         i += size * 0.18
     ) {
-        ctx.beginPath();
 
-        ctx.moveTo(
-            i + offset,
+        target.beginPath();
+
+        target.moveTo(
+            i + movement,
             -size * 2
         );
 
-        ctx.lineTo(
-            i + offset + size,
+        target.lineTo(
+            i + movement + size,
             size * 2
         );
 
-        ctx.stroke();
+        target.stroke();
     }
 
-    ctx.restore();
+    target.restore();
 
 
-    // Fake person movement
+    // Fake person's movement
     const bob =
         Math.sin(
-            time * 4 +
-            clipIndex * 1.3
+            time * 4 + index
         ) * size * 0.025;
 
 
     // Head
-    ctx.fillStyle = clip.foreground;
+    target.globalAlpha = 1;
+    target.fillStyle = clip.fg;
 
-    ctx.beginPath();
+    target.beginPath();
 
-    ctx.arc(
+    target.arc(
         0,
         -size * 0.12 + bob,
         size * 0.12,
@@ -194,13 +190,13 @@ function drawClip(x, y, size, clipIndex, time) {
         Math.PI * 2
     );
 
-    ctx.fill();
+    target.fill();
 
 
     // Body
-    ctx.beginPath();
+    target.beginPath();
 
-    ctx.roundRect(
+    target.roundRect(
         -size * 0.17,
         size * 0.02 + bob,
         size * 0.34,
@@ -208,61 +204,61 @@ function drawClip(x, y, size, clipIndex, time) {
         size * 0.05
     );
 
-    ctx.fill();
+    target.fill();
 
 
     // Waving arm
-    ctx.strokeStyle = clip.foreground;
-    ctx.lineWidth = size * 0.065;
-    ctx.lineCap = "round";
+    target.strokeStyle = clip.fg;
+    target.lineWidth = size * 0.065;
+    target.lineCap = "round";
 
     const handY =
         -size * 0.20 +
         Math.sin(
-            time * 5 +
-            clipIndex
+            time * 5 + index
         ) * size * 0.10;
 
-    ctx.beginPath();
+    target.beginPath();
 
-    ctx.moveTo(
+    target.moveTo(
         size * 0.08,
         size * 0.08 + bob
     );
 
-    ctx.lineTo(
+    target.lineTo(
         size * 0.27,
         handY
     );
 
-    ctx.stroke();
+    target.stroke();
 
 
-    // Clip number
-    ctx.globalAlpha = 0.8;
-    ctx.font =
+    // Label
+    target.globalAlpha = 0.75;
+
+    target.font =
         "bold " +
         Math.max(14, size * 0.08) +
         "px Arial";
 
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
+    target.textAlign = "center";
+    target.textBaseline = "middle";
 
-    ctx.fillText(
-        "CLIP " + clip.number,
+    target.fillText(
+        "CLIP " + clip.id,
         0,
         size * 0.40
     );
 
-    ctx.restore();
+    target.restore();
 }
 
 
-// --------------------------------------------------
-// 4/3 MASK
-// --------------------------------------------------
+// ==================================================
+// CREATE THE 4/3 MASK
+// ==================================================
 
-function create43Mask() {
+function createMask() {
 
     const mask = document.createElement("canvas");
 
@@ -271,23 +267,22 @@ function create43Mask() {
 
     const m = mask.getContext("2d");
 
-    /*
-        White = visible.
-        Black = transparent.
 
-        We draw the shape using thick strokes.
-    */
+    // Transparent background
+    m.clearRect(0, 0, 1000, 1000);
 
-    m.fillStyle = "#000";
-    m.fillRect(0, 0, 1000, 1000);
 
-    m.strokeStyle = "#fff";
+    // White = visible area
+    m.strokeStyle = "#ffffff";
     m.lineWidth = 145;
     m.lineCap = "square";
     m.lineJoin = "miter";
 
 
-    // 4
+    // --------------------------
+    // THE 4
+    // --------------------------
+
     m.beginPath();
 
     m.moveTo(350, 120);
@@ -299,7 +294,10 @@ function create43Mask() {
     m.stroke();
 
 
-    // 3
+    // --------------------------
+    // THE 3
+    // --------------------------
+
     m.beginPath();
 
     m.moveTo(650, 170);
@@ -318,17 +316,18 @@ function create43Mask() {
 
     m.stroke();
 
+
     return mask;
 }
 
-const maskCanvas = create43Mask();
+const mask = createMask();
 
 
-// --------------------------------------------------
+// ==================================================
 // CAMERA PATH
-// --------------------------------------------------
+// ==================================================
 
-const cameraPath = [
+const path = [
     { x: 0.18, y: 0.16 },
     { x: 0.36, y: 0.17 },
     { x: 0.29, y: 0.39 },
@@ -339,184 +338,176 @@ const cameraPath = [
 ];
 
 
-// --------------------------------------------------
+// ==================================================
 // EASING
-// --------------------------------------------------
+// ==================================================
 
-function easeInOut(t) {
-
-    if (t < 0.5) {
-        return 2 * t * t;
-    }
-
-    return 1 -
-        Math.pow(-2 * t + 2, 2) / 2;
+function ease(t) {
+    return t < 0.5
+        ? 2 * t * t
+        : 1 - Math.pow(-2 * t + 2, 2) / 2;
 }
 
 
-// --------------------------------------------------
+// ==================================================
 // CAMERA POSITION
-// --------------------------------------------------
+// ==================================================
 
-function getCameraPosition(progress) {
+function getCamera(progress) {
 
     const scaled =
-        progress *
-        (cameraPath.length - 1);
+        progress * (path.length - 1);
 
-    const index = Math.min(
-        Math.floor(scaled),
-        cameraPath.length - 2
-    );
+    const segment =
+        Math.min(
+            Math.floor(scaled),
+            path.length - 2
+        );
 
     const local =
-        scaled - index;
+        scaled - segment;
 
-    const a = cameraPath[index];
-    const b = cameraPath[index + 1];
+    const a = path[segment];
+    const b = path[segment + 1];
 
     return {
-        x:
-            a.x +
-            (b.x - a.x) * local,
-
-        y:
-            a.y +
-            (b.y - a.y) * local
+        x: a.x + (b.x - a.x) * local,
+        y: a.y + (b.y - a.y) * local
     };
 }
 
 
-// --------------------------------------------------
-// DRAW THE CLIP-FILLED 4/3
-// --------------------------------------------------
+// ==================================================
+// DRAW THE ACTUAL CLIP-FILLED 4/3
+// ==================================================
 
-function drawLogo(time, zoom, cameraX, cameraY) {
+function draw43(time, zoom, cameraX, cameraY) {
 
-    /*
-        Work in a square coordinate system.
-        This makes the 4/3 shape independent
-        of screen resolution.
-    */
+    const size =
+        Math.min(W, H) * 1.25;
 
-    const logoSize =
-        Math.min(width, height) * 1.25;
-
-    const tileSize =
-        logoSize * 0.24;
+    const clipSize =
+        size * 0.23;
 
 
-    // Temporary canvas
+    // ----------------------------------------------
+    // Temporary layer
+    // ----------------------------------------------
+
     const layer =
         document.createElement("canvas");
 
-    layer.width =
-        Math.ceil(width * dpr);
-
-    layer.height =
-        Math.ceil(height * dpr);
+    layer.width = W * DPR;
+    layer.height = H * DPR;
 
     const layerCtx =
         layer.getContext("2d");
 
     layerCtx.setTransform(
-        dpr,
+        DPR,
         0,
         0,
-        dpr,
+        DPR,
         0,
         0
     );
 
 
-    // Fill the layer with moving clips
+    // ----------------------------------------------
+    // Draw lots of clips
+    // ----------------------------------------------
+
     for (
-        let row = -5;
+        let row = -6;
         row <= 7;
         row++
     ) {
 
         for (
-            let col = -5;
+            let col = -6;
             col <= 7;
             col++
         ) {
 
-            const clipIndex =
+            const index =
                 Math.abs(
                     row * 7 + col
                 ) % clips.length;
 
 
-            const movementX =
+            const moveX =
                 Math.sin(
-                    time * 1.7 +
-                    row * 1.8 +
+                    time * 1.6 +
+                    row * 1.7 +
                     col
                 ) *
-                tileSize *
-                0.10;
+                clipSize *
+                0.08;
 
 
-            const movementY =
+            const moveY =
                 Math.cos(
-                    time * 1.5 +
-                    col * 1.4 +
+                    time * 1.4 +
+                    col * 1.3 +
                     row
                 ) *
-                tileSize *
-                0.10;
+                clipSize *
+                0.08;
 
 
             const x =
-                width / 2 +
-                col * tileSize * 0.82 +
-                movementX;
+                W / 2 +
+                col * clipSize * 0.82 +
+                moveX;
 
 
             const y =
-                height / 2 +
-                row * tileSize * 0.82 +
-                movementY;
+                H / 2 +
+                row * clipSize * 0.82 +
+                moveY;
 
+
+            // THIS IS THE IMPORTANT FIX:
+            // draw the clip onto layerCtx,
+            // not the main canvas.
 
             drawClip(
+                layerCtx,
                 x,
                 y,
-                tileSize,
-                clipIndex,
+                clipSize,
+                index,
                 time
             );
         }
     }
 
 
-    /*
-        Apply the 4/3 mask.
-    */
+    // ----------------------------------------------
+    // Apply the 4/3 mask
+    // ----------------------------------------------
 
     layerCtx.globalCompositeOperation =
         "destination-in";
 
     layerCtx.drawImage(
-        maskCanvas,
-        width / 2 - logoSize / 2,
-        height / 2 - logoSize / 2,
-        logoSize,
-        logoSize
+        mask,
+        W / 2 - size / 2,
+        H / 2 - size / 2,
+        size,
+        size
     );
 
 
-    /*
-        Draw the clip-filled logo with
-        the camera zoom applied.
-    */
+    // ----------------------------------------------
+    // Camera zoom
+    // ----------------------------------------------
 
     ctx.save();
 
     ctx.translate(
-        width / 2,
-        height / 2
+        W / 2,
+        H / 2
     );
 
     ctx.scale(
@@ -529,44 +520,45 @@ function drawLogo(time, zoom, cameraX, cameraY) {
         -cameraY
     );
 
+
+    // Draw ONLY the masked 4/3 layer
     ctx.drawImage(
         layer,
-        -width / 2,
-        -height / 2,
-        width,
-        height
+        -W / 2,
+        -H / 2,
+        W,
+        H
     );
 
     ctx.restore();
 }
 
 
-// --------------------------------------------------
-// ANIMATION LOOP
-// --------------------------------------------------
+// ==================================================
+// MAIN ANIMATION
+// ==================================================
 
-function animate(timestamp) {
+function animate(now) {
 
-    // Before clicking:
-    // completely black screen.
+    // Before starting, remain completely black.
     if (!started) {
 
         ctx.setTransform(
-            dpr,
+            DPR,
             0,
             0,
-            dpr,
+            DPR,
             0,
             0
         );
 
-        ctx.fillStyle = "#000";
+        ctx.fillStyle = "#000000";
 
         ctx.fillRect(
             0,
             0,
-            width,
-            height
+            W,
+            H
         );
 
         requestAnimationFrame(animate);
@@ -576,71 +568,74 @@ function animate(timestamp) {
 
 
     const elapsed =
-        timestamp - startTime;
+        now - startTime;
 
 
-    const rawProgress =
+    const raw =
         Math.min(
-            elapsed / INTRO_LENGTH,
+            elapsed / DURATION,
             1
         );
 
 
-    /*
-        Smooth zoom-out.
-    */
-
     const progress =
-        easeInOut(rawProgress);
+        ease(raw);
 
+
+    // ----------------------------------------------
+    // Zoom from VERY inside the 4
+    // ----------------------------------------------
 
     const zoom =
         START_ZOOM -
-        (START_ZOOM - 1) *
-        progress;
+        (START_ZOOM - 1) * progress;
 
 
-    /*
-        Camera moves through the 4/3
-        while zooming out.
-    */
+    // ----------------------------------------------
+    // Camera travels through the 4/3
+    // ----------------------------------------------
 
     const camera =
-        getCameraPosition(progress);
+        getCamera(progress);
 
+    const baseSize =
+        Math.min(W, H);
 
     const cameraX =
-        (camera.x - 0.5) *
-        Math.min(width, height);
-
+        (camera.x - 0.5) * baseSize;
 
     const cameraY =
-        (camera.y - 0.5) *
-        Math.min(width, height);
+        (camera.y - 0.5) * baseSize;
 
 
-    // Clear screen
+    // ----------------------------------------------
+    // Clear
+    // ----------------------------------------------
+
     ctx.setTransform(
-        dpr,
+        DPR,
         0,
         0,
-        dpr,
+        DPR,
         0,
         0
     );
 
-    ctx.fillStyle = "#000";
+    ctx.fillStyle = "#000000";
 
     ctx.fillRect(
         0,
         0,
-        width,
-        height
+        W,
+        H
     );
 
 
-    // Draw the actual clip-filled 4/3
-    drawLogo(
+    // ----------------------------------------------
+    // Draw clip-filled 4/3
+    // ----------------------------------------------
+
+    draw43(
         elapsed / 1000,
         zoom,
         cameraX,
@@ -651,16 +646,13 @@ function animate(timestamp) {
     /*
         IMPORTANT:
 
-        At 100% progress we DO NOT:
-        - fade to white
-        - draw another 4/3
-        - overlay a logo
-        - flash anything
+        When raw reaches 1, NOTHING changes.
 
-        We simply keep drawing the exact same
-        clip-filled 4/3 at zoom = 1.
-
-        This is the final frame.
+        The same clip-filled 4/3 remains.
+        No white logo.
+        No fade.
+        No flash.
+        No second logo.
     */
 
 
@@ -668,9 +660,9 @@ function animate(timestamp) {
 }
 
 
-// --------------------------------------------------
-// START
-// --------------------------------------------------
+// ==================================================
+// CLICK TO START
+// ==================================================
 
 canvas.addEventListener(
     "pointerdown",
@@ -688,14 +680,17 @@ canvas.addEventListener(
 );
 
 
-// Initial frame
-ctx.fillStyle = "#000";
+// ==================================================
+// INITIAL BLACK SCREEN
+// ==================================================
+
+ctx.fillStyle = "#000000";
 
 ctx.fillRect(
     0,
     0,
-    width,
-    height
+    W,
+    H
 );
 
 requestAnimationFrame(animate);
