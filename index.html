@@ -1,908 +1,493 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Graduation Intro</title>
+  <title>4/3 Graduation Intro</title>
 
-<style>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
-html, body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: black;
-}
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+    }
 
-canvas {
-    display: block;
-    width: 100vw;
-    height: 100vh;
-}
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-</style>
+    canvas {
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      object-fit: contain;
+    }
+
+    #start {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      background: #000;
+      color: white;
+
+      font-family: Arial, sans-serif;
+      font-size: 20px;
+      letter-spacing: 2px;
+
+      cursor: pointer;
+    }
+
+    #start.hidden {
+      display: none;
+    }
+  </style>
 </head>
-
 
 <body>
 
-<canvas id="canvas"></canvas>
-
-
-<script>
-
-
-// ============================================================
-// CANVAS
-// ============================================================
-
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
-
-let W, H;
-
-
-function resize() {
-
-    W = canvas.width = window.innerWidth;
-    H = canvas.height = window.innerHeight;
-
-}
-
-
-resize();
-
-window.addEventListener("resize", resize);
-
-
-
-// ============================================================
-// SETTINGS
-// ============================================================
-
-// How long the entire camera journey lasts
-const INTRO_DURATION = 10000;
-
-// How zoomed-in the opening is
-const START_ZOOM = 8.5;
-
-
-
-// ============================================================
-// CAMERA PATH
-// ============================================================
-
-const path = [
-
-    { x: 0.16, y: 0.18 },
-
-    { x: 0.38, y: 0.18 },
-
-    { x: 0.30, y: 0.43 },
-
-    { x: 0.55, y: 0.48 },
-
-    { x: 0.70, y: 0.62 },
-
-    { x: 0.82, y: 0.78 }
-
-];
-
-
-
-// ============================================================
-// CREATE 4/3 MASK
-// ============================================================
-
-function createMask() {
-
-    const mask = document.createElement("canvas");
-
-    mask.width = 1000;
-    mask.height = 1000;
-
-    const m = mask.getContext("2d");
-
-
-    m.clearRect(
-        0,
-        0,
-        1000,
-        1000
-    );
-
-
-    m.strokeStyle = "white";
-
-    m.lineWidth = 145;
-
-    m.lineCap = "square";
-
-    m.lineJoin = "miter";
-
-
-
-    // --------------------------------------------------------
-    // NUMBER 4
-    // --------------------------------------------------------
-
-    m.beginPath();
-
-    m.moveTo(
-        350,
-        120
-    );
-
-    m.lineTo(
-        350,
-        530
-    );
-
-    m.lineTo(
-        110,
-        530
-    );
-
-    m.lineTo(
-        520,
-        120
-    );
-
-    m.lineTo(
-        520,
-        880
-    );
-
-    m.stroke();
-
-
-
-    // --------------------------------------------------------
-    // NUMBER 3
-    // --------------------------------------------------------
-
-    m.beginPath();
-
-    m.moveTo(
-        650,
-        170
-    );
-
-
-    m.bezierCurveTo(
-        850,
-        80,
-        890,
-        280,
-        700,
-        470
-    );
-
-
-    m.bezierCurveTo(
-        900,
-        500,
-        900,
-        850,
-        650,
-        830
-    );
-
-
-    m.stroke();
-
-
-    return mask;
-
-}
-
-
-const mask = createMask();
-
-
-
-// ============================================================
-// PLACEHOLDER CLIP
-// ============================================================
-
-function drawClip(
-    c,
-    x,
-    y,
-    size,
-    type,
-    time
-) {
-
-    c.save();
-
-
-    c.translate(
-        x,
-        y
-    );
-
-
-
-    // --------------------------------------------------------
-    // Slight movement
-    // --------------------------------------------------------
-
-    const wave =
-        Math.sin(
-            time * 0.0025 +
-            type * 1.7
-        ) *
-        size *
-        0.08;
-
-
-    c.translate(
-        wave,
-        0
-    );
-
-
-
-    // --------------------------------------------------------
-    // Placeholder colours
-    // --------------------------------------------------------
-
-    const gradients = [
-
-        ["#1d3557", "#457b9d"],
-
-        ["#283618", "#606c38"],
-
-        ["#3c096c", "#7b2cbf"],
-
-        ["#9d0208", "#dc2f02"],
-
-        ["#023e8a", "#00b4d8"],
-
-        ["#5a189a", "#ff6d00"]
-
+  <div id="start">
+    CLICK TO START
+  </div>
+
+  <canvas id="canvas"></canvas>
+
+  <script>
+    // =========================================================
+    // SETTINGS
+    // =========================================================
+
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    const startScreen = document.getElementById("start");
+
+    // Placeholder video.
+    // Later, replace these with:
+    //
+    // "videos/clip1.mp4"
+    // "videos/clip2.mp4"
+    // etc.
+    //
+    const VIDEO_URLS = [
+      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
     ];
 
+    const videos = [];
 
+    // Animation length
+    const INTRO_DURATION = 6000;
 
-    const g =
-        c.createLinearGradient(
-            -size / 2,
-            -size / 2,
-            size / 2,
-            size / 2
-        );
+    // =========================================================
+    // CANVAS
+    // =========================================================
 
+    function resizeCanvas() {
+      const dpr = window.devicePixelRatio || 1;
 
-    g.addColorStop(
-        0,
-        gradients[type][0]
-    );
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
 
+      canvas.style.width = window.innerWidth + "px";
+      canvas.style.height = window.innerHeight + "px";
 
-    g.addColorStop(
-        1,
-        gradients[type][1]
-    );
-
-
-    c.fillStyle = g;
-
-
-
-    // --------------------------------------------------------
-    // Clip background
-    // --------------------------------------------------------
-
-    c.fillRect(
-        -size / 2,
-        -size / 2,
-        size,
-        size
-    );
-
-
-
-    // --------------------------------------------------------
-    // Head
-    // --------------------------------------------------------
-
-    c.fillStyle = "#f1c27d";
-
-
-    c.beginPath();
-
-
-    c.arc(
-        0,
-        -size * 0.08,
-        size * 0.13,
-        0,
-        Math.PI * 2
-    );
-
-
-    c.fill();
-
-
-
-    // --------------------------------------------------------
-    // Body
-    // --------------------------------------------------------
-
-    c.fillStyle = "#111";
-
-
-    c.beginPath();
-
-
-    c.roundRect(
-        -size * 0.18,
-        size * 0.05,
-        size * 0.36,
-        size * 0.35,
-        size * 0.06
-    );
-
-
-    c.fill();
-
-
-
-    // --------------------------------------------------------
-    // Waving arm
-    // --------------------------------------------------------
-
-    c.strokeStyle = "#f1c27d";
-
-    c.lineWidth =
-        size * 0.07;
-
-    c.lineCap = "round";
-
-
-    const armWave =
-        Math.sin(
-            time * 0.006 +
-            type
-        ) *
-        size *
-        0.12;
-
-
-    c.beginPath();
-
-
-    c.moveTo(
-        size * 0.13,
-        size * 0.12
-    );
-
-
-    c.lineTo(
-        size * 0.30,
-        -size * 0.05 +
-        armWave
-    );
-
-
-    c.stroke();
-
-
-
-    // --------------------------------------------------------
-    // Hand
-    // --------------------------------------------------------
-
-    c.beginPath();
-
-
-    c.arc(
-        size * 0.30,
-        -size * 0.05 +
-        armWave,
-        size * 0.075,
-        0,
-        Math.PI * 2
-    );
-
-
-    c.fill();
-
-
-    c.restore();
-
-}
-
-
-
-// ============================================================
-// DRAW ALL PLACEHOLDER CLIPS
-// ============================================================
-
-function drawClips(
-    c,
-    time
-) {
-
-    const tileSize = 105;
-
-    const spacing = 92;
-
-
-
-    // --------------------------------------------------------
-    // Gradually accelerate
-    // --------------------------------------------------------
-
-    const speed =
-        0.35 +
-        (time / INTRO_DURATION) *
-        2.5;
-
-
-    const movement =
-        time *
-        0.055 *
-        speed;
-
-
-
-    // --------------------------------------------------------
-    // Create large clip field
-    // --------------------------------------------------------
-
-    for (
-        let y = -200;
-        y <= 1200;
-        y += spacing
-    ) {
-
-
-        for (
-            let x = -200;
-            x <= 1200;
-            x += spacing
-        ) {
-
-
-            // ------------------------------------------------
-            // Wrap horizontally
-            // ------------------------------------------------
-
-            const offsetX =
-                (
-                    (x + movement) %
-                    1000 +
-                    1000
-                ) %
-                1000;
-
-
-
-            // ------------------------------------------------
-            // Wrap vertically
-            // ------------------------------------------------
-
-            const offsetY =
-                (
-                    (y + movement * 0.55) %
-                    1000 +
-                    1000
-                ) %
-                1000;
-
-
-
-            // ------------------------------------------------
-            // Grid position
-            // ------------------------------------------------
-
-            const gridX =
-                Math.floor(
-                    x / spacing
-                );
-
-
-            const gridY =
-                Math.floor(
-                    y / spacing
-                );
-
-
-
-            // ------------------------------------------------
-            // Change placeholder every 300ms
-            // ------------------------------------------------
-
-            const index =
-                Math.abs(
-                    gridX * 7 +
-                    gridY * 13 +
-                    Math.floor(
-                        time / 300
-                    )
-                ) % 6;
-
-
-
-            drawClip(
-                c,
-                offsetX,
-                offsetY,
-                tileSize,
-                index,
-                time
-            );
-
-        }
-
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
-}
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
 
 
+    // =========================================================
+    // CREATE VIDEOS
+    // =========================================================
 
-// ============================================================
-// EASING
-// ============================================================
+    function createVideos() {
 
-function easeInOut(t) {
+      VIDEO_URLS.forEach((url, index) => {
 
-    return t < 0.5
+        const video = document.createElement("video");
 
-        ? 2 * t * t
+        video.src = url;
 
-        : 1 -
-          Math.pow(
-              -2 * t + 2,
-              2
-          ) / 2;
+        video.muted = true;
+        video.loop = true;
+        video.autoplay = false;
+        video.playsInline = true;
+        video.crossOrigin = "anonymous";
 
-}
+        video.addEventListener("loadeddata", () => {
 
+          // Start at slightly different points
+          // so the clips don't look identical.
+          video.currentTime = index * 0.3;
 
+        });
 
-// ============================================================
-// CAMERA
-// ============================================================
+        videos.push(video);
+      });
+    }
 
-function getCamera(
-    progress
-) {
-
-    const eased =
-        easeInOut(progress);
-
-
-
-    // --------------------------------------------------------
-    // Zoom
-    // --------------------------------------------------------
-
-    const zoom =
-        START_ZOOM +
-        (1 - START_ZOOM) *
-        eased;
+    createVideos();
 
 
+    // =========================================================
+    // WAIT UNTIL VIDEOS ARE READY
+    // =========================================================
 
-    // --------------------------------------------------------
-    // Position along path
-    // --------------------------------------------------------
+    async function startVideos() {
 
-    const position =
-        eased *
-        (path.length - 1);
+      for (const video of videos) {
+
+        try {
+          await video.play();
+        } catch (error) {
+          console.log("Video waiting for permission...");
+        }
+
+      }
+    }
 
 
+    // =========================================================
+    // DRAW A VIDEO TILE
+    // =========================================================
 
-    const index =
+    function drawVideoCover(video, x, y, width, height) {
+
+      if (
+        !video.videoWidth ||
+        !video.videoHeight
+      ) {
+        return;
+      }
+
+      const videoRatio =
+        video.videoWidth / video.videoHeight;
+
+      const boxRatio =
+        width / height;
+
+      let sourceWidth;
+      let sourceHeight;
+      let sourceX;
+      let sourceY;
+
+      if (videoRatio > boxRatio) {
+
+        sourceHeight = video.videoHeight;
+
+        sourceWidth =
+          sourceHeight * boxRatio;
+
+        sourceX =
+          (video.videoWidth - sourceWidth) / 2;
+
+        sourceY = 0;
+
+      } else {
+
+        sourceWidth = video.videoWidth;
+
+        sourceHeight =
+          sourceWidth / boxRatio;
+
+        sourceX = 0;
+
+        sourceY =
+          (video.videoHeight - sourceHeight) / 2;
+      }
+
+      ctx.drawImage(
+        video,
+
+        sourceX,
+        sourceY,
+        sourceWidth,
+        sourceHeight,
+
+        x,
+        y,
+        width,
+        height
+      );
+    }
+
+
+    // =========================================================
+    // CREATE THE 4/3 MASK
+    // =========================================================
+
+    function drawMaskedVideos(width, height) {
+
+      /*
+        First draw the six videos onto the canvas.
+
+        Then use "destination-in" to keep ONLY
+        the areas where the text 4/3 exists.
+      */
+
+      const tileWidth = width / 3;
+      const tileHeight = height / 2;
+
+      // Six video tiles
+      for (let i = 0; i < 6; i++) {
+
+        const column = i % 3;
+        const row = Math.floor(i / 3);
+
+        const x = column * tileWidth;
+        const y = row * tileHeight;
+
+        drawVideoCover(
+          videos[i],
+          x,
+          y,
+          tileWidth,
+          tileHeight
+        );
+      }
+
+      // Save the video layer
+      ctx.save();
+
+      // Everything after this is clipped to the text
+      ctx.globalCompositeOperation = "destination-in";
+
+      ctx.font =
+        `900 ${height * 0.75}px Arial Black, Arial, sans-serif`;
+
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      ctx.fillStyle = "#fff";
+
+      ctx.fillText(
+        "4/3",
+        width / 2,
+        height / 2
+      );
+
+      ctx.restore();
+    }
+
+
+    // =========================================================
+    // DRAW THE INTRO
+    // =========================================================
+
+    function render(time) {
+
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+
+      ctx.clearRect(
+        0,
+        0,
+        screenWidth,
+        screenHeight
+      );
+
+      // Black background
+      ctx.fillStyle = "#000";
+
+      ctx.fillRect(
+        0,
+        0,
+        screenWidth,
+        screenHeight
+      );
+
+
+      // -------------------------------------------------------
+      // ANIMATION PROGRESS
+      // -------------------------------------------------------
+
+      const progress =
+        Math.min(time / INTRO_DURATION, 1);
+
+
+      /*
+        We want:
+
+        START:
+        Extremely zoomed in.
+
+        END:
+        Full 4/3 visible.
+      */
+
+      const startScale = 3.8;
+      const endScale = 1;
+
+      // Smooth ease-out
+      const eased =
+        1 - Math.pow(1 - progress, 3);
+
+      const scale =
+        startScale +
+        (endScale - startScale) * eased;
+
+
+      // -------------------------------------------------------
+      // SIZE OF THE 4/3
+      // -------------------------------------------------------
+
+      const logoWidth =
         Math.min(
-            Math.floor(position),
-            path.length - 2
+          screenWidth * 0.75,
+          1000
+        );
+
+      const logoHeight =
+        Math.min(
+          screenHeight * 0.75,
+          700
         );
 
 
+      // -------------------------------------------------------
+      // DRAW INTO AN OFFSCREEN CANVAS
+      // -------------------------------------------------------
 
-    const local =
-        position - index;
+      const offscreen =
+        document.createElement("canvas");
 
+      offscreen.width = logoWidth;
+      offscreen.height = logoHeight;
 
-
-    const a =
-        path[index];
-
-
-    const b =
-        path[index + 1];
-
-
-
-    return {
-
-        x:
-            a.x +
-            (b.x - a.x) *
-            local,
-
-        y:
-            a.y +
-            (b.y - a.y) *
-            local,
-
-        zoom:
-            zoom
-
-    };
-
-}
+      const offCtx =
+        offscreen.getContext("2d");
 
 
+      // Temporarily switch context
+      const oldCanvas = canvas;
 
-// ============================================================
-// DRAW FRAME
-// ============================================================
+      // Draw the videos directly using our main context
+      // after transforming it.
 
-function drawFrame(
-    elapsed
-) {
+      ctx.save();
 
-    // --------------------------------------------------------
-    // Clear screen
-    // --------------------------------------------------------
+      ctx.translate(
+        screenWidth / 2,
+        screenHeight / 2
+      );
 
-    ctx.clearRect(
-        0,
-        0,
-        W,
-        H
-    );
+      ctx.scale(
+        scale,
+        scale
+      );
 
+      ctx.translate(
+        -logoWidth / 2,
+        -logoHeight / 2
+      );
 
-    ctx.fillStyle = "black";
+      // Create a transparent layer
+      ctx.save();
 
-
-    ctx.fillRect(
-        0,
-        0,
-        W,
-        H
-    );
-
-
-
-    // --------------------------------------------------------
-    // Temporary canvas
-    // --------------------------------------------------------
-
-    const temp =
-        document.createElement(
-            "canvas"
-        );
-
-
-    temp.width = 1000;
-
-    temp.height = 1000;
-
-
-    const tc =
-        temp.getContext("2d");
-
-
-
-    // --------------------------------------------------------
-    // Draw placeholder clips
-    // --------------------------------------------------------
-
-    drawClips(
-        tc,
-        elapsed
-    );
-
-
-
-    // --------------------------------------------------------
-    // Mask clips into 4/3
-    // --------------------------------------------------------
-
-    tc.globalCompositeOperation =
-        "destination-in";
-
-
-    tc.drawImage(
-        mask,
-        0,
-        0
-    );
-
-
-    tc.globalCompositeOperation =
+      ctx.globalCompositeOperation =
         "source-over";
 
+      drawMaskedVideos(
+        logoWidth,
+        logoHeight
+      );
+
+      ctx.restore();
+
+      ctx.restore();
 
 
-    // --------------------------------------------------------
-    // Camera progress
-    // --------------------------------------------------------
+      // -------------------------------------------------------
+      // FINAL 4/3 FLASH
+      // -------------------------------------------------------
 
-    const progress =
-        Math.min(
-            elapsed /
-            INTRO_DURATION,
-            1
+      if (progress > 0.88) {
+
+        const flashProgress =
+          (progress - 0.88) / 0.12;
+
+        const alpha =
+          Math.sin(
+            flashProgress * Math.PI
+          );
+
+        ctx.fillStyle =
+          `rgba(255,255,255,${alpha * 0.25})`;
+
+        ctx.fillRect(
+          0,
+          0,
+          screenWidth,
+          screenHeight
+        );
+      }
+
+
+      // -------------------------------------------------------
+      // END
+      // -------------------------------------------------------
+
+      if (progress >= 1) {
+
+        // Keep the final 4/3 on screen.
+        ctx.save();
+
+        ctx.fillStyle = "#fff";
+
+        ctx.font =
+          `900 ${Math.min(screenWidth, screenHeight) * 0.32}px Arial Black, Arial, sans-serif`;
+
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        ctx.fillText(
+          "4/3",
+          screenWidth / 2,
+          screenHeight / 2
         );
 
+        ctx.restore();
+      }
 
-
-    const camera =
-        getCamera(
-            progress
-        );
-
-
-
-    // --------------------------------------------------------
-    // Size of giant 4/3
-    // --------------------------------------------------------
-
-    const logoSize =
-        Math.max(
-            W,
-            H
-        ) * 1.35;
-
-
-
-    // --------------------------------------------------------
-    // Camera transform
-    // --------------------------------------------------------
-
-    ctx.save();
-
-
-
-    // Screen centre
-    ctx.translate(
-        W / 2,
-        H / 2
-    );
-
-
-
-    // Zoom
-    ctx.scale(
-        camera.zoom,
-        camera.zoom
-    );
-
-
-
-    // --------------------------------------------------------
-    // CAMERA FIX
-    //
-    // Keeps the point we're travelling toward
-    // centred on the screen.
-    // --------------------------------------------------------
-
-    ctx.translate(
-
-        (0.5 - camera.x) *
-        logoSize,
-
-        (0.5 - camera.y) *
-        logoSize
-
-    );
-
-
-
-    // --------------------------------------------------------
-    // Draw 4/3
-    // --------------------------------------------------------
-
-    ctx.drawImage(
-
-        temp,
-
-        0,
-        0,
-
-        logoSize,
-        logoSize
-
-    );
-
-
-
-    ctx.restore();
-
-}
-
-
-
-// ============================================================
-// CLICK TO START
-// ============================================================
-
-let started = false;
-
-
-document.addEventListener(
-    "click",
-    function() {
-
-
-        // Prevent restarting
-        if (started) return;
-
-
-        started = true;
-
-
-
-        const startTime =
-            performance.now();
-
-
-
-        function animate(
-            now
-        ) {
-
-
-            const elapsed =
-                now -
-                startTime;
-
-
-
-            drawFrame(
-                elapsed
-            );
-
-
-
-            if (
-                elapsed <
-                INTRO_DURATION
-            ) {
-
-
-                requestAnimationFrame(
-                    animate
-                );
-
-
-            } else {
-
-
-                // Freeze on final frame
-                drawFrame(
-                    INTRO_DURATION
-                );
-
-            }
-
-        }
-
-
-
-        requestAnimationFrame(
-            animate
-        );
-
+      requestAnimationFrame(render);
     }
-);
 
 
-</script>
+    // =========================================================
+    // START
+    // =========================================================
+
+    startScreen.addEventListener("click", async () => {
+
+      startScreen.classList.add("hidden");
+
+      await startVideos();
+
+      requestAnimationFrame(render);
+    });
+
+  </script>
 
 </body>
 </html>
