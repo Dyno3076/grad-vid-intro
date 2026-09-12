@@ -246,9 +246,10 @@ function drawClips(c, time) {
     const tileSize = 105;
     const spacing = 92;
 
+    // Starts slow, then accelerates
     const speed =
-        0.55 +
-        (time / INTRO_DURATION) * 2.2;
+        0.35 +
+        (time / INTRO_DURATION) * 2.5;
 
     const movement =
         time * 0.055 * speed;
@@ -258,15 +259,20 @@ function drawClips(c, time) {
 
         for (let x = -200; x <= 1200; x += spacing) {
 
+            // Keep the entire clip field covering the mask
             const offsetX =
-                ((x + movement) % 1800 + 1800) % 1800 - 900;
+                ((x + movement) % 1000 + 1000) % 1000;
 
             const offsetY =
-                ((y + movement * 0.55) % 1500 + 1500) % 1500 - 500;
+                ((y + movement * 0.55) % 1000 + 1000) % 1000;
 
 
-            const gridX = Math.floor(x / spacing);
-            const gridY = Math.floor(y / spacing);
+            const gridX =
+                Math.floor(x / spacing);
+
+            const gridY =
+                Math.floor(y / spacing);
+
 
             const index =
                 Math.abs(
@@ -351,6 +357,7 @@ function drawFrame(elapsed) {
     ctx.fillRect(0, 0, W, H);
 
 
+    // Temporary layer for clips
     const temp = document.createElement("canvas");
 
     temp.width = 1000;
@@ -359,9 +366,11 @@ function drawFrame(elapsed) {
     const tc = temp.getContext("2d");
 
 
+    // Draw clips
     drawClips(tc, elapsed);
 
 
+    // Cut clips into the 4/3 shape
     tc.globalCompositeOperation = "destination-in";
 
     tc.drawImage(
@@ -373,11 +382,13 @@ function drawFrame(elapsed) {
     tc.globalCompositeOperation = "source-over";
 
 
+    // Camera progress
     const progress =
         Math.min(
             elapsed / INTRO_DURATION,
             1
         );
+
 
     const camera =
         getCamera(progress);
@@ -389,24 +400,29 @@ function drawFrame(elapsed) {
 
     ctx.save();
 
+
+    // Screen centre
     ctx.translate(
         W / 2,
         H / 2
     );
 
 
+    // Zoom
     ctx.scale(
         camera.zoom,
         camera.zoom
     );
 
 
+    // Move camera through the 4/3
     ctx.translate(
         -camera.x * logoSize,
         -camera.y * logoSize
     );
 
 
+    // Draw the clip-filled 4/3
     ctx.drawImage(
         temp,
         0,
@@ -450,6 +466,7 @@ document.addEventListener("click", function() {
 
         } else {
 
+            // Stay on the final clip-filled 4/3
             drawFrame(INTRO_DURATION);
         }
     }
